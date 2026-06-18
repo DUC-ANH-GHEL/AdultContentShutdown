@@ -1,0 +1,22 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/vercel-site/index.html"
+    },
+    {
+      "source": "/styles.css",
+      "destination": "/vercel-site/styles.css"
+    },
+    {
+      "source": "/privacy/adult-content-shutdown-guard",
+      "destination": "/vercel-site/privacy/adult-content-shutdown-guard/index.html"
+    },
+    {
+      "source": "/privacy/adult-content-shutdown-guard/",
+      "destination": "/vercel-site/privacy/adult-content-shutdown-guard/index.html"
+    }
+  ]
+}
