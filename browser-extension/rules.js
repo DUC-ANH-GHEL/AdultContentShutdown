@@ -1,0 +1,53 @@
+// Shared defaults. Production installs override endpoint values through
+// Chrome/Edge managed storage policy.
+const RULES = {
+  serviceUrl: "http://127.0.0.1:8765/violation",
+  healthUrl: "http://127.0.0.1:8765/health",
+  token: "",
+  adultDomains: [
+    "pornhub.com",
+    "xvideos.com",
+    "xnxx.com",
+    "youporn.com",
+    "redtube.com",
+    "xhamster.com",
+    "spankbang.com",
+    "brazzers.com",
+    "onlyfans.com",
+    "fansly.com",
+    "javhd.com",
+    "javhub.net",
+    "javmost.com",
+    "hanime.tv",
+    "nhentai.net",
+    "rule34.xxx"
+  ],
+  adultKeywords: [
+    "porn",
+    "porno",
+    "xxx",
+    "sex",
+    "nude",
+    "naked",
+    "hentai",
+    "jav",
+    "blowjob",
+    "anal",
+    "pussy",
+    "dick",
+    "tits",
+    "adult video",
+    "sex video",
+    "clip sex",
+    "phim sex",
+    "sex viet",
+    "gai khoa than",
+    "khoa than",
+    "phim nguoi lon",
+    "noi dung nguoi lon"
+  ],
+  strongKeywords: ["porn", "porno", "xxx", "sex", "nude", "naked", "hentai", "jav", "blowjob", "anal", "pussy", "dick", "tits"],
+  minScoreToShutdown: 100,
+  debounceMilliseconds: 3000,
+  visibleTextLimit: 5000
+};

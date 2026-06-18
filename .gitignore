@@ -1,0 +1,11 @@
+bin/
+obj/
+publish/
+dist/
+.vs/
+*.user
+*.suo
+*.log
+*.crx
+*.pem
+C:\ProgramData\AdultContentShutdownGuard\Logs/
