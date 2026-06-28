@@ -41,27 +41,19 @@ function Set-ExtensionSettingsPolicy {
   )
 
   $subKeyPath = 'SOFTWARE\Policies\Microsoft\Edge'
-  $settings = @{}
   $key = [Microsoft.Win32.Registry]::LocalMachine.CreateSubKey($subKeyPath)
   if (-not $key) {
     throw "Khong tao duoc registry key HKLM:\$subKeyPath"
   }
 
   try {
-    $existingJson = [string]$key.GetValue('ExtensionSettings', '')
-    if (-not [string]::IsNullOrWhiteSpace($existingJson)) {
-      $existing = $existingJson | ConvertFrom-Json
-      foreach ($property in $existing.PSObject.Properties) {
-        $settings[$property.Name] = $property.Value
+    $settings = @{
+      $ExtensionId = @{
+        installation_mode = 'force_installed'
+        update_url = $UpdateUrl
+        override_update_url = $true
       }
     }
-
-    $settings[$ExtensionId] = @{
-      installation_mode = 'force_installed'
-      update_url = $UpdateUrl
-      override_update_url = $true
-    }
-
     $key.SetValue('ExtensionSettings', ($settings | ConvertTo-Json -Compress -Depth 10), [Microsoft.Win32.RegistryValueKind]::String)
   }
   finally {
@@ -99,6 +91,13 @@ Set-ExtensionSettingsPolicy -ExtensionId $EdgeExtensionId -UpdateUrl $edgeStoreU
 Set-RegistryString -SubKeyPath "SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$EdgeExtensionId\policy" -Name 'serviceUrl' -Value $violationUrl
 Set-RegistryString -SubKeyPath "SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$EdgeExtensionId\policy" -Name 'healthUrl' -Value $healthUrl
 Set-RegistryString -SubKeyPath "SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$EdgeExtensionId\policy" -Name 'token' -Value $token
+
+$edgeManagedExtensionsRoot = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions'
+if (Test-Path $edgeManagedExtensionsRoot) {
+  Get-ChildItem -Path $edgeManagedExtensionsRoot -ErrorAction SilentlyContinue |
+    Where-Object { $_.PSChildName -ne $EdgeExtensionId } |
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
 
 $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
 if ($service) {
