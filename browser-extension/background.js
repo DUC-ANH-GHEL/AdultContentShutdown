@@ -8,6 +8,24 @@ function normalize(value) {
   return (value || "").toLowerCase();
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function keywordToPattern(keyword) {
+  const normalized = normalize(keyword).trim();
+  if (!normalized) {
+    return null;
+  }
+
+  const phrasePattern = normalized
+    .split(/\s+/)
+    .map(escapeRegExp)
+    .join("[^a-z0-9]+");
+
+  return new RegExp(`(^|[^a-z0-9])${phrasePattern}(?=$|[^a-z0-9])`);
+}
+
 function matchesKnownAdultDomain(hostname) {
   const host = normalize(hostname);
   return RULES.adultDomains.some((domain) => host === domain || host.endsWith(`.${domain}`));
@@ -15,7 +33,10 @@ function matchesKnownAdultDomain(hostname) {
 
 function containsKeyword(text, keywords) {
   const normalized = normalize(text);
-  return keywords.filter((keyword) => normalized.includes(keyword.toLowerCase()));
+  return keywords.filter((keyword) => {
+    const pattern = keywordToPattern(keyword);
+    return pattern ? pattern.test(normalized) : false;
+  });
 }
 
 function isBrowserInternalUrl(url) {
@@ -162,6 +183,27 @@ async function postViolation(payload, runtimeRules) {
   }
 }
 
+async function closeViolationTab(tabId) {
+  try {
+    await chrome.tabs.remove(tabId);
+  } catch {
+    // The tab may already be closed or may be a browser-protected page.
+  }
+}
+
+async function handleViolation(tabId, snapshot, evaluation, runtimeRules) {
+  recentViolationsByTab.set(tabId, Date.now());
+  await postViolation({
+    url: snapshot.url,
+    host: snapshot.host,
+    title: snapshot.title,
+    reason: evaluation.reason,
+    matchedRules: evaluation.matchedRules,
+    detectedAt: new Date().toISOString()
+  }, runtimeRules);
+  await closeViolationTab(tabId);
+}
+
 async function evaluateTab(tabId, url, title) {
   if (isBrowserInternalUrl(url)) {
     return;
@@ -177,15 +219,7 @@ async function evaluateTab(tabId, url, title) {
   const urlSnapshot = createUrlSnapshot(url, title);
   const urlEvaluation = scoreSnapshot(urlSnapshot);
   if (urlEvaluation.score >= runtimeRules.minScoreToShutdown) {
-    recentViolationsByTab.set(tabId, now);
-    await postViolation({
-      url: urlSnapshot.url,
-      host: urlSnapshot.host,
-      title: urlSnapshot.title,
-      reason: urlEvaluation.reason,
-      matchedRules: urlEvaluation.matchedRules,
-      detectedAt: new Date().toISOString()
-    }, runtimeRules);
+    await handleViolation(tabId, urlSnapshot, urlEvaluation, runtimeRules);
     return;
   }
 
@@ -205,15 +239,11 @@ async function evaluateTab(tabId, url, title) {
     return;
   }
 
-  recentViolationsByTab.set(tabId, now);
-  await postViolation({
+  await handleViolation(tabId, {
     url: snapshot.url || url,
     host: snapshot.host || new URL(url).hostname,
-    title: snapshot.title || title || "",
-    reason: evaluation.reason,
-    matchedRules: evaluation.matchedRules,
-    detectedAt: new Date().toISOString()
-  }, runtimeRules);
+    title: snapshot.title || title || ""
+  }, evaluation, runtimeRules);
 }
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {

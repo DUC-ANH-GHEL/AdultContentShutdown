@@ -25,10 +25,9 @@ public sealed class GuardEventServiceTests
     }
 
     [Fact]
-    public async Task HandleAsync_keeps_blocked_domain_as_shutdown_action_in_dry_run()
+    public async Task HandleAsync_uses_log_only_for_blocked_domain_by_default()
     {
         var options = CreateOptions();
-        options.DryRun = true;
         var service = CreateService(options);
         var guardEvent = new GuardEvent
         {
@@ -38,7 +37,7 @@ public sealed class GuardEventServiceTests
 
         await service.HandleAsync(guardEvent, CancellationToken.None);
 
-        Assert.Equal("DryRun:Shutdown", guardEvent.ActionTaken);
+        Assert.Equal("LogOnly", guardEvent.ActionTaken);
     }
 
     [Fact]

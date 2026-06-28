@@ -62,7 +62,7 @@ public sealed class DnsOptions
 
 public sealed class EnforcementOptions
 {
-    public string ActionOnViolation { get; set; } = "Shutdown";
+    public string ActionOnViolation { get; set; } = "LogOnly";
 
     public string ActionOnTamper { get; set; } = "Shutdown";
 
