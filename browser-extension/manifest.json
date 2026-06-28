@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Adult Content Shutdown Guard",
   "short_name": "ACSG Guard",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Connects managed browsers to the local AdultContentShutdownGuard Windows service for domain and page-risk enforcement.",
   "permissions": ["tabs", "webNavigation", "storage"],
   "host_permissions": ["<all_urls>", "http://127.0.0.1:8765/*"],

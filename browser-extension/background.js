@@ -18,6 +18,38 @@ function containsKeyword(text, keywords) {
   return keywords.filter((keyword) => normalized.includes(keyword.toLowerCase()));
 }
 
+function isBrowserInternalUrl(url) {
+  return !url ||
+    url.startsWith("chrome://") ||
+    url.startsWith("edge://") ||
+    url.startsWith("about:");
+}
+
+function createUrlSnapshot(url, title) {
+  try {
+    const parsed = new URL(url);
+    return {
+      url,
+      host: parsed.hostname,
+      title: title || "",
+      metaDescription: "",
+      metaKeywords: "",
+      headings: "",
+      bodyText: ""
+    };
+  } catch {
+    return {
+      url,
+      host: "",
+      title: title || "",
+      metaDescription: "",
+      metaKeywords: "",
+      headings: "",
+      bodyText: ""
+    };
+  }
+}
+
 function getManagedConfig() {
   return new Promise((resolve) => {
     if (!chrome.storage?.managed) {
@@ -92,12 +124,22 @@ function scoreSnapshot(snapshot) {
 }
 
 async function getContentSnapshot(tabId) {
-  try {
-    const response = await chrome.tabs.sendMessage(tabId, CONTENT_QUERY);
-    return response?.ok ? response.snapshot : null;
-  } catch {
-    return null;
+  for (const delay of [0, 250, 1000]) {
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    try {
+      const response = await chrome.tabs.sendMessage(tabId, CONTENT_QUERY);
+      if (response?.ok) {
+        return response.snapshot;
+      }
+    } catch {
+      // The content script may not be injected yet on fast navigation events.
+    }
   }
+
+  return null;
 }
 
 async function postViolation(payload, runtimeRules) {
@@ -121,7 +163,7 @@ async function postViolation(payload, runtimeRules) {
 }
 
 async function evaluateTab(tabId, url, title) {
-  if (!url || url.startsWith("chrome://") || url.startsWith("edge://")) {
+  if (isBrowserInternalUrl(url)) {
     return;
   }
 
@@ -132,12 +174,28 @@ async function evaluateTab(tabId, url, title) {
     return;
   }
 
+  const urlSnapshot = createUrlSnapshot(url, title);
+  const urlEvaluation = scoreSnapshot(urlSnapshot);
+  if (urlEvaluation.score >= runtimeRules.minScoreToShutdown) {
+    recentViolationsByTab.set(tabId, now);
+    await postViolation({
+      url: urlSnapshot.url,
+      host: urlSnapshot.host,
+      title: urlSnapshot.title,
+      reason: urlEvaluation.reason,
+      matchedRules: urlEvaluation.matchedRules,
+      detectedAt: new Date().toISOString()
+    }, runtimeRules);
+    return;
+  }
+
   const snapshot = await getContentSnapshot(tabId);
   if (!snapshot) {
     return;
   }
 
   const evaluation = scoreSnapshot({
+    ...urlSnapshot,
     ...snapshot,
     url: snapshot.url || url,
     title: snapshot.title || title
