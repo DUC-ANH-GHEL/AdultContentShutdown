@@ -360,6 +360,27 @@ function Set-ExtensionManagedStoragePolicy {
   }
 }
 
+function Set-MandatoryEdgeInPrivateExtensionPolicy {
+  param([string]$ExtensionId)
+
+  if ([string]::IsNullOrWhiteSpace($ExtensionId)) {
+    return
+  }
+
+  $subKeyPath = 'SOFTWARE\Policies\Microsoft\Edge\MandatoryExtensionsForInPrivateNavigation'
+  $key = [Microsoft.Win32.Registry]::LocalMachine.CreateSubKey($subKeyPath)
+  if (-not $key) {
+    throw "Khong tao duoc registry key HKLM:\$subKeyPath"
+  }
+
+  try {
+    $key.SetValue('1', $ExtensionId, [Microsoft.Win32.RegistryValueKind]::String)
+  }
+  finally {
+    $key.Dispose()
+  }
+}
+
 function Apply-ManagedBrowserPolicy {
   param(
     [object]$ManagedBrowser,
@@ -385,7 +406,9 @@ function Apply-ManagedBrowserPolicy {
     Set-ForceListPolicy -Path $edgePath -ExtensionId $ManagedBrowser.EdgeExtensionId -UpdateUrl $ManagedBrowser.UpdateUrl
     Set-ExtensionSettingsPolicy -Path $edgeSettingsPath -ExtensionId $ManagedBrowser.EdgeExtensionId -UpdateUrl $ManagedBrowser.UpdateUrl
     Set-ExtensionManagedStoragePolicy -Browser 'Edge' -ExtensionId $ManagedBrowser.EdgeExtensionId -Token $Token
+    Set-MandatoryEdgeInPrivateExtensionPolicy -ExtensionId $ManagedBrowser.EdgeExtensionId
     Write-Host 'Da ghi Edge ExtensionInstallForcelist.'
+    Write-Host 'Da yeu cau Edge InPrivate chi duoc duyet khi extension duoc allow trong InPrivate.'
   }
 }
 

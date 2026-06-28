@@ -40,8 +40,11 @@ if ($service) {
 Get-NetFirewallRule -DisplayName 'AdultContentShutdownGuard*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue
 Remove-Item -Path 'HKLM:\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist' -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist' -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\MandatoryExtensionsForInPrivateNavigation' -Recurse -Force -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Google\Chrome' -Name 'ExtensionSettings' -Force -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge' -Name 'ExtensionSettings' -Force -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Google\Chrome' -Name 'IncognitoModeAvailability' -Force -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge' -Name 'InPrivateModeAvailability' -Force -ErrorAction SilentlyContinue
 
 foreach ($extensionId in ($extensionIds | Select-Object -Unique)) {
   Remove-Item -Path "HKLM:\SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\$extensionId" -Recurse -Force -ErrorAction SilentlyContinue

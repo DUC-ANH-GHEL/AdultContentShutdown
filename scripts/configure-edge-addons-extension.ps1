@@ -91,6 +91,8 @@ Set-ExtensionSettingsPolicy -ExtensionId $EdgeExtensionId -UpdateUrl $edgeStoreU
 Set-RegistryString -SubKeyPath "SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$EdgeExtensionId\policy" -Name 'serviceUrl' -Value $violationUrl
 Set-RegistryString -SubKeyPath "SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$EdgeExtensionId\policy" -Name 'healthUrl' -Value $healthUrl
 Set-RegistryString -SubKeyPath "SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$EdgeExtensionId\policy" -Name 'token' -Value $token
+Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge' -Name 'InPrivateModeAvailability' -Force -ErrorAction SilentlyContinue
+Set-RegistryString -SubKeyPath 'SOFTWARE\Policies\Microsoft\Edge\MandatoryExtensionsForInPrivateNavigation' -Name '1' -Value $EdgeExtensionId
 
 $edgeManagedExtensionsRoot = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions'
 if (Test-Path $edgeManagedExtensionsRoot) {
@@ -105,4 +107,5 @@ if ($service) {
 }
 
 Write-Host "Da cau hinh Edge Add-ons extension: $EdgeExtensionId"
+Write-Host 'Da yeu cau Edge InPrivate chi duoc duyet khi extension duoc allow trong InPrivate.'
 Write-Host 'Mo edge://policy va bam Tai lai chinh sach, hoac khoi dong lai Edge.'

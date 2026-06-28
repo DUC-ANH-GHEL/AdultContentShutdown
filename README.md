@@ -60,6 +60,8 @@ Ban self-host CRX cuc bo co the bi Edge/Chrome tren may unmanaged chan (`[BLOCKE
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\configure-edge-addons-extension.ps1 -EdgeExtensionId <EDGE_EXTENSION_ID>
 ```
 
+Script nay cung ghi Edge policy `MandatoryExtensionsForInPrivateNavigation`. InPrivate van duoc mo, nhung Edge se chan duyet InPrivate neu extension chua duoc allow trong InPrivate; user thuong khong the tat extension da force-install de bypass policy nay.
+
 Tai lieu chi tiet nam tai `docs/edge-addons-publish-guide.md`.
 
 Health endpoint:
