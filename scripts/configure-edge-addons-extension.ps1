@@ -34,6 +34,26 @@ function Set-RegistryString {
   }
 }
 
+function Set-RegistryDword {
+  param(
+    [string]$SubKeyPath,
+    [string]$Name,
+    [int]$Value
+  )
+
+  $key = [Microsoft.Win32.Registry]::LocalMachine.CreateSubKey($SubKeyPath)
+  if (-not $key) {
+    throw "Khong tao duoc registry key HKLM:\$SubKeyPath"
+  }
+
+  try {
+    $key.SetValue($Name, $Value, [Microsoft.Win32.RegistryValueKind]::DWord)
+  }
+  finally {
+    $key.Dispose()
+  }
+}
+
 function Set-ExtensionSettingsPolicy {
   param(
     [string]$ExtensionId,
@@ -93,6 +113,7 @@ Set-RegistryString -SubKeyPath "SOFTWARE\Policies\Microsoft\Edge\3rdparty\extens
 Set-RegistryString -SubKeyPath "SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$EdgeExtensionId\policy" -Name 'token' -Value $token
 Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge' -Name 'InPrivateModeAvailability' -Force -ErrorAction SilentlyContinue
 Set-RegistryString -SubKeyPath 'SOFTWARE\Policies\Microsoft\Edge\MandatoryExtensionsForInPrivateNavigation' -Name '1' -Value $EdgeExtensionId
+Set-RegistryDword -SubKeyPath 'SOFTWARE\Policies\Google\Chrome' -Name 'IncognitoModeAvailability' -Value 1
 
 $edgeManagedExtensionsRoot = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions'
 if (Test-Path $edgeManagedExtensionsRoot) {
@@ -108,4 +129,5 @@ if ($service) {
 
 Write-Host "Da cau hinh Edge Add-ons extension: $EdgeExtensionId"
 Write-Host 'Da yeu cau Edge InPrivate chi duoc duyet khi extension duoc allow trong InPrivate.'
+Write-Host 'Da tat Chrome Incognito de tranh bypass khi Chrome khong tu bat extension trong Incognito.'
 Write-Host 'Mo edge://policy va bam Tai lai chinh sach, hoac khoi dong lai Edge.'

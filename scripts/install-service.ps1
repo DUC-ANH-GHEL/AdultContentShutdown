@@ -329,6 +329,27 @@ function Set-ExtensionSettingsPolicy {
   }
 }
 
+function Set-RegistryDword {
+  param(
+    [string]$Path,
+    [string]$Name,
+    [int]$Value
+  )
+
+  $subKeyPath = $Path.Replace('HKLM:\', '').Replace('/', '\')
+  $key = [Microsoft.Win32.Registry]::LocalMachine.CreateSubKey($subKeyPath)
+  if (-not $key) {
+    throw "Khong tao duoc registry key HKLM:\$subKeyPath"
+  }
+
+  try {
+    $key.SetValue($Name, $Value, [Microsoft.Win32.RegistryValueKind]::DWord)
+  }
+  finally {
+    $key.Dispose()
+  }
+}
+
 function Set-ExtensionManagedStoragePolicy {
   param(
     [string]$Browser,
@@ -400,7 +421,9 @@ function Apply-ManagedBrowserPolicy {
     Set-ForceListPolicy -Path $chromePath -ExtensionId $ManagedBrowser.ChromeExtensionId -UpdateUrl $ManagedBrowser.UpdateUrl
     Set-ExtensionSettingsPolicy -Path $chromeSettingsPath -ExtensionId $ManagedBrowser.ChromeExtensionId -UpdateUrl $ManagedBrowser.UpdateUrl
     Set-ExtensionManagedStoragePolicy -Browser 'Chrome' -ExtensionId $ManagedBrowser.ChromeExtensionId -Token $Token
+    Set-RegistryDword -Path $chromeSettingsPath -Name 'IncognitoModeAvailability' -Value 1
     Write-Host 'Da ghi Chrome ExtensionInstallForcelist.'
+    Write-Host 'Da tat Chrome Incognito de tranh bypass extension.'
   }
 
   if (-not [string]::IsNullOrWhiteSpace($ManagedBrowser.EdgeExtensionId)) {
