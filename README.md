@@ -64,6 +64,30 @@ Script nay cung ghi Edge policy `MandatoryExtensionsForInPrivateNavigation`. InP
 
 Tai lieu chi tiet nam tai `docs/edge-addons-publish-guide.md`.
 
+### Bao Ve Goi Cai Dat / Tat Extension
+
+Installer tao secret cuc bo tai `C:\ProgramData\AdultContentShutdownGuard\Security\uninstall-secret.bin` va khoa ACL chi cho `Administrators`/`SYSTEM` doc. Ma go cai dat duoc tinh tu secret nay va tu dong doi theo gio.
+
+Lay ma hien tai bang PowerShell Admin:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\show-uninstall-code.ps1
+```
+
+Tat managed browser guard policy hop le:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\disable-managed-browser-guard.ps1 -UninstallCode <MA_HIEN_TAI>
+```
+
+Go service hop le:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-service.ps1 -UninstallCode <MA_HIEN_TAI>
+```
+
+Nguoi dung thuong khong co quyen doc secret hoac sua HKLM policy. Neu user co Administrator, Windows app khong the ngan bypass tuyet doi; luc do can MDM/Intune/AppLocker/WDAC de khoa may o cap thiet bi.
+
 Health endpoint:
 
 ```text
@@ -138,7 +162,7 @@ Che do nay co the doi DNS adapter ve `127.0.0.1`, tao firewall rule va ghi regis
 Mo PowerShell voi quyen Administrator:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-service.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-service.ps1 -UninstallCode <MA_HIEN_TAI>
 ```
 
 Script go service va xoa firewall rule co prefix `AdultContentShutdownGuard*` neu ton tai. Script khong xoa browser policy cua nguoi dung trong safe-mode. Log chi bi xoa neu ban xac nhan.

@@ -1,4 +1,10 @@
+param(
+  [string]$UninstallCode
+)
+
 $ErrorActionPreference = 'Stop'
+
+Import-Module (Join-Path $PSScriptRoot 'GuardUninstallProtection.psm1') -Force
 
 function Assert-Admin {
   $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -9,6 +15,7 @@ function Assert-Admin {
 }
 
 Assert-Admin
+Assert-GuardUninstallCode -Code $UninstallCode
 
 $serviceName = 'AdultContentShutdownGuard'
 $installDir = 'C:\Program Files\AdultContentShutdownGuard'

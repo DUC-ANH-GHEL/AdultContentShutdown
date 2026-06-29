@@ -1,5 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
+Import-Module (Join-Path $PSScriptRoot 'GuardUninstallProtection.psm1') -Force
+
 function Assert-Admin {
   $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
   $principal = New-Object Security.Principal.WindowsPrincipal($currentIdentity)
@@ -12,6 +14,7 @@ Assert-Admin
 
 $programDataDir = 'C:\ProgramData\AdultContentShutdownGuard'
 New-Item -ItemType Directory -Force -Path $programDataDir | Out-Null
+New-GuardUninstallSecret | Out-Null
 $transcriptPath = Join-Path $programDataDir 'install.log'
 Start-Transcript -Path $transcriptPath -Append | Out-Null
 
