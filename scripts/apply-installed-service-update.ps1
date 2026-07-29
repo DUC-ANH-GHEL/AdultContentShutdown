@@ -56,6 +56,11 @@ $json = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
 $json.Guard.PSObject.Properties.Remove('ManagedBrowserEndpoint')
 $json.Guard.PSObject.Properties.Remove('LegacyExtensionEndpointEnabled')
 $json.Guard.PSObject.Properties.Remove('Token')
+if (-not $json.Guard.Overlay) {
+  $json.Guard | Add-Member -NotePropertyName Overlay -NotePropertyValue ([pscustomobject]@{})
+}
+Set-JsonProperty -Object $json.Guard.Overlay -Name 'Enabled' -Value $false
+Set-JsonProperty -Object $json.Guard.Overlay -Name 'DurationSeconds' -Value 300
 Set-JsonProperty -Object $json.Guard.Dns -Name 'Enabled' -Value $true
 Set-JsonProperty -Object $json.Guard.Dns -Name 'ListenAddresses' -Value @('127.0.0.1', '::1')
 Set-JsonProperty -Object $json.Guard.Dns -Name 'ReturnNxDomain' -Value $true
@@ -76,6 +81,7 @@ Set-JsonProperty -Object $json.Guard.NetworkPosture -Name 'ActionOnUnsafePosture
 Set-JsonProperty -Object $json.Guard.ProcessRules -Name 'ActionOnWorkVpnDetected' -Value 'LogOnly'
 $json | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $settingsPath -Encoding UTF8
 
+Set-Service -Name $serviceName -StartupType Automatic
 Start-Service -Name $serviceName
 (Get-Service -Name $serviceName).WaitForStatus('Running', [TimeSpan]::FromSeconds(30))
 
