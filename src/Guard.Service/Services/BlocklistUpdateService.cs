@@ -60,6 +60,11 @@ public sealed class BlocklistUpdateService
         _lastRefresh = DateTimeOffset.UtcNow;
         var localFile = Path.Combine(AppContext.BaseDirectory, "Config", "adult-domains.txt");
         var files = new List<string> { localFile };
+        var bundledSnapshot = Path.Combine(AppContext.BaseDirectory, "Config", "adult-domains.snapshot.txt.gz");
+        if (File.Exists(bundledSnapshot))
+        {
+            files.Add(bundledSnapshot);
+        }
 
         if (_options.BlocklistUpdates.Enabled)
         {

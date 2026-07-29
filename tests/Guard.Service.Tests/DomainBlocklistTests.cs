@@ -1,5 +1,6 @@
 using AdultContentShutdownGuard.Guard.Service.Services;
 using AdultContentShutdownGuard.Guard.Service.Models;
+using System.IO.Compression;
 using Xunit;
 
 namespace Guard.Service.Tests;
@@ -58,6 +59,33 @@ public sealed class DomainBlocklistTests
 
             Assert.True(blocklist.IsBlocked("xvideos.com", out _));
             Assert.True(blocklist.IsBlocked("xnxx.com", out _));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
+    public async Task LoadAsync_reads_gzip_hosts_file_and_ignores_non_domains()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.txt.gz");
+        try
+        {
+            await using (var output = File.Create(file))
+            await using (var gzip = new GZipStream(output, CompressionMode.Compress))
+            await using (var writer = new StreamWriter(gzip))
+            {
+                await writer.WriteLineAsync("0.0.0.0 example.porn # adult host entry");
+                await writer.WriteLineAsync("127.0.0.1 localhost");
+                await writer.WriteLineAsync("not-a-domain");
+            }
+
+            var blocklist = await DomainBlocklist.LoadAsync(new[] { file }, CancellationToken.None);
+
+            Assert.True(blocklist.IsBlocked("cdn.example.porn", out var matchedRule));
+            Assert.Equal("example.porn", matchedRule);
+            Assert.False(blocklist.IsBlocked("localhost", out _));
         }
         finally
         {

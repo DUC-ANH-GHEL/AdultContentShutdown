@@ -17,5 +17,6 @@
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Config\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Config\*.gz" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

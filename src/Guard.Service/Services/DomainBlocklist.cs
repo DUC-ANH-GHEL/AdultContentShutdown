@@ -1,9 +1,13 @@
 using System.Globalization;
+using System.IO.Compression;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace AdultContentShutdownGuard.Guard.Service.Services;
 
 public sealed class DomainBlocklist
 {
+    private static readonly Regex DomainLabel = new(@"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private readonly HashSet<string> _domains;
 
     private DomainBlocklist(IEnumerable<string> domains)
@@ -16,8 +20,7 @@ public sealed class DomainBlocklist
     public static DomainBlocklist FromDomains(IEnumerable<string> domains)
     {
         var normalized = domains
-            .Select(NormalizeDomain)
-            .Where(domain => !string.IsNullOrWhiteSpace(domain))
+            .SelectMany(ExtractDomains)
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
         return new DomainBlocklist(normalized);
@@ -33,14 +36,14 @@ public sealed class DomainBlocklist
                 continue;
             }
 
-            var lines = await File.ReadAllLinesAsync(filePath, cancellationToken);
-            foreach (var line in lines)
+            await using var fileStream = File.OpenRead(filePath);
+            await using Stream input = filePath.EndsWith(".gz", StringComparison.OrdinalIgnoreCase)
+                ? new GZipStream(fileStream, CompressionMode.Decompress)
+                : fileStream;
+            using var reader = new StreamReader(input);
+            while (await reader.ReadLineAsync(cancellationToken) is { } line)
             {
-                var clean = StripComment(line);
-                foreach (var domain in clean.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                {
-                    domains.Add(domain);
-                }
+                domains.AddRange(ExtractDomains(line));
             }
         }
 
@@ -83,26 +86,53 @@ public sealed class DomainBlocklist
         return (hashIndex >= 0 ? value[..hashIndex] : value).Trim();
     }
 
+    private static IEnumerable<string> ExtractDomains(string? line)
+    {
+        var clean = StripComment(line ?? string.Empty);
+        foreach (var token in clean.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (TryNormalizeDomain(token, out var domain))
+            {
+                yield return domain;
+            }
+        }
+    }
+
     private static string NormalizeDomain(string? host)
     {
+        return TryNormalizeDomain(host, out var domain) ? domain : string.Empty;
+    }
+
+    private static bool TryNormalizeDomain(string? host, out string domain)
+    {
+        domain = string.Empty;
         if (string.IsNullOrWhiteSpace(host))
         {
-            return string.Empty;
+            return false;
         }
 
         var trimmed = host.Trim().TrimEnd('.').ToLowerInvariant();
-        if (trimmed.Length == 0)
+        if (trimmed.Length is 0 or > 253 || IPAddress.TryParse(trimmed, out _))
         {
-            return string.Empty;
+            return false;
         }
 
         try
         {
-            return new IdnMapping().GetAscii(trimmed).ToLowerInvariant();
+            domain = new IdnMapping().GetAscii(trimmed).ToLowerInvariant();
         }
         catch
         {
-            return trimmed;
+            return false;
         }
+
+        var labels = domain.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (labels.Length < 2 || labels.Any(label => !DomainLabel.IsMatch(label)))
+        {
+            domain = string.Empty;
+            return false;
+        }
+
+        return true;
     }
 }
