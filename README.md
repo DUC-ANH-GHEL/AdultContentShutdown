@@ -1,177 +1,85 @@
-# AdultContentShutdownGuard
+# Adult Content Shutdown Guard
 
-AdultContentShutdownGuard la he thong parental-control chay cuc bo tren Windows cho may do chu so huu hoac quan tri vien quan ly. Ban hien tai uu tien safe-mode: service khong tu doi DNS adapter, khong tao firewall rule, khong sua registry browser policy, va khong bind DNS port `53` theo mac dinh.
+Adult Content Shutdown Guard la dich vu bao ve cap may Windows. Du an khong dung extension trinh duyet: tat ca profile Chrome, Edge, Firefox, Guest va rieng tu deu di qua lop DNS cuc bo cua may.
 
-Extension Chrome/Edge trong `browser-extension` la lop browser-managed de bat domain/page state ngay ca khi VPN che DNS. Service van co the hoat dong doc lap bang passive DNS monitoring va process bypass monitoring, nhung de strict qua VPN can extension duoc force-install bang browser policy.
+## Co che bao ve
 
-## Kien Truc Mac Dinh
+```text
+Moi ung dung -> DNS IPv4/IPv6 cua Windows -> DNS cuc bo 127.0.0.1 / ::1
+             -> danh sach chan tai may -> NXDOMAIN + hanh dong bao ve
+```
 
-Windows DNS Client event log -> Passive DNS monitor -> blocklist local/remote -> log/shutdown
+- Dich vu DNS chay tren `127.0.0.1:53` va `::1:53`, chan ten mien nam trong danh sach tai may cho moi tai khoan Windows va moi profile trinh duyet.
+- Chinh sach cap may tat DNS-over-HTTPS, QUIC, cua so rieng tu va che do Khach cua Chrome, Edge, Firefox.
+- Tu dong kiem tra va khoi phuc DNS, firewall va chinh sach trinh duyet neu bi thay doi.
+- Chan DNS-over-TLS va DNS truc tiep tren cac trinh duyet pho bien; dong thoi theo doi DNS thụ dong va cac tien trinh vuot qua nhu Tor/psiphon.
+- Danh sach tu xa chi duoc tai qua HTTPS va phai khop SHA-256. Neu khong hop, dich vu chi dung danh sach local/cache truoc do.
+- Endpoint `http://127.0.0.1:8765/health` chi de doc trang thai. Khong co endpoint nhan URL, token hay extension.
 
-Service giu health endpoint tren `127.0.0.1:8765`. Neu bat blocklist remote, service chi tai danh sach domain tu HTTPS URL cau hinh va bat buoc kiem tra SHA-256 truoc khi ghi cache.
+Che do mac dinh chan DNS va ghi nhat ky, khong tu tat may. `AllowMachineShutdown` mac dinh la `false` va la khoa an toan bat buoc: du cau hinh mot hanh dong la `Shutdown`, dich vu van khong goi `shutdown.exe` neu quan tri vien chua chu dong bat co nay. Khong bat co nay truoc khi hoan tat luong canh bao va kiem thu tren may phu.
 
-## Chuc Nang
+## Gioi han ky thuat trung thuc
 
-- Passive DNS monitor doc Windows DNS Client operational events de phat hien domain bi chan ma khong doi DNS cua may.
-- Managed browser endpoint nhan domain tu extension Chrome/Edge da duoc quan ly, giup thay domain ngay ca khi VPN che DNS khoi Windows event log.
-- Process monitor phat hien VPN/proxy/Tor va cac bypass process trong danh sach cau hinh.
-- Network posture monitor chi log rui ro nhu DoH policy chua khoa, DNS adapter khong do guard quan ly, firewall rule chua cai. Mac dinh khong tu sua.
-- DNS sinkhole local van ton tai nhu che do opt-in thu cong bang `Dns.Enabled=true`.
-- Browser policy/firewall/DNS hardening van ton tai nhu che do opt-in, nhung mac dinh tat.
-- Legacy extension endpoint `/violation` mac dinh tat.
-- Log JSON line tai may local.
+Khong phan mem Windows nao co the chan tuyet doi nguoi dang dung tai khoan **Quan tri vien** hoac nguoi co the khoi dong tu USB: ho co quyen go dich vu, sua registry va cai lai he dieu hanh. De bao ve thuc te, tai khoan su dung hang ngay phai la tai khoan thuong; mat khau Quan tri vien phai do nguoi giam ho giu. WDAC/AppLocker hoac MDM se la lop bo sung khi can khoa ca trinh duyet di dong/portable.
 
-## Gioi Han Ky Thuat
+DNS chi nhin thay ten mien, khong doc noi dung HTTPS. Khong su dung giai ma TLS hay cai chung chi goc, vi cach do lam giam an toan va rieng tu cua tai khoan, ngan hang va dich vu ca nhan. Neu can phan tich luong ma hoa ma van khong giai ma, giai phap cap san pham la WFP callout driver da ky so; phan nay khong nen lam bang driver tu ky tren may dung that.
 
-- Passive mode khong doc duoc noi dung body trang HTTPS.
-- Neu browser dung VPN va DNS khong lo qua Windows DNS Client, passive DNS co the khong thay domain that. De bat qua VPN can managed browser extension hoac mot diem quan sat tu trong browser.
-- Neu nguoi dung hang ngay co quyen Administrator, ho van co the go service hoac sua cau hinh he thong. Muon strict cap enterprise can MDM, AppLocker/WDAC hoac co che quan tri thiet bi tuong duong.
+## Cai dat
 
-## Build
+Mo PowerShell voi quyen Quan tri vien:
 
 ```powershell
 dotnet restore
-dotnet build
 dotnet test
 powershell -ExecutionPolicy Bypass -File .\scripts\publish-service.ps1
-```
-
-## Cai Windows Service
-
-Mo PowerShell voi quyen Administrator:
-
-```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install-service.ps1
 ```
 
-Script cai service va recovery, tao thu muc log/config. Safe-mode mac dinh khong doi DNS, firewall hoac browser policy.
+Truoc khi doi DNS, installer luu DNS hien tai vao `C:\ProgramData\AdultContentShutdownGuard\dns-backup.json`. File cau hinh, danh sach cache va secret go cai dat duoc khoa quyen ghi cho tai khoan thuong.
 
-Installer se sinh token ngau nhien cho endpoint browser-managed va copy extension local co token vao:
-
-```text
-C:\ProgramData\AdultContentShutdownGuard\browser-extension
-```
-
-Installer sinh token ngau nhien cho endpoint browser-managed va ghi token vao Chrome/Edge managed storage policy. Extension publish len store khong hardcode token.
-
-Ban self-host CRX cuc bo co the bi Edge/Chrome tren may unmanaged chan (`[BLOCKED]`). Flow production khuyen nghi la publish len Microsoft Edge Add-ons, lay extension ID, roi chay:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\configure-edge-addons-extension.ps1 -EdgeExtensionId <EDGE_EXTENSION_ID>
-```
-
-Script nay cung ghi Edge policy `MandatoryExtensionsForInPrivateNavigation`. InPrivate van duoc mo, nhung Edge se chan duyet InPrivate neu extension chua duoc allow trong InPrivate; user thuong khong the tat extension da force-install de bypass policy nay. Voi Chrome, script ghi `IncognitoModeAvailability=1` de tat han Incognito vi Chrome khong cho admin tu dong bat extension trong Incognito.
-
-Tai lieu chi tiet nam tai `docs/edge-addons-publish-guide.md`.
-
-### Bao Ve Goi Cai Dat / Tat Extension
-
-Installer tao secret cuc bo tai `C:\ProgramData\AdultContentShutdownGuard\Security\uninstall-secret.bin` va khoa ACL chi cho `Administrators`/`SYSTEM` doc. Ma go cai dat duoc tinh tu secret nay va tu dong doi theo gio.
-
-Lay ma hien tai bang PowerShell Admin:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\show-uninstall-code.ps1
-```
-
-Tat managed browser guard policy hop le:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\disable-managed-browser-guard.ps1 -UninstallCode <MA_HIEN_TAI>
-```
-
-Go service hop le:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-service.ps1 -UninstallCode <MA_HIEN_TAI>
-```
-
-Nguoi dung thuong khong co quyen doc secret hoac sua HKLM policy. Neu user co Administrator, Windows app khong the ngan bypass tuyet doi; luc do can MDM/Intune/AppLocker/WDAC de khoa may o cap thiet bi.
-
-Health endpoint:
+Kiem tra:
 
 ```text
 http://127.0.0.1:8765/health
 ```
 
-## Kiem Tra An Toan
-
-Neu test tren may that, nen dat:
-
-```json
-"DryRun": true
-```
-
-Khi `DryRun=true`, service chi log. Khi `DryRun=false`, `BlockedDomain` hoac bypass process co the goi:
-
-```text
-shutdown.exe /s /t 0 /f /c "Adult content blocked by AdultContentShutdownGuard"
-```
-
-## Cau Hinh Chinh
-
-- `DryRun`: `false` cho production, `true` de test khong tat may.
-- `Dns.Enabled`: mac dinh `false`. Bat `true` la che do DNS sinkhole opt-in, co the anh huong browsing neu service loi.
-- `Enforcement.ApplyOnStartup`: mac dinh `false`; neu bat thi service moi apply DNS/firewall hardening.
-- `Enforcement.ConfigureDnsAdapters`: mac dinh `false`.
-- `Enforcement.ConfigureFirewallRules`: mac dinh `false`.
-- `BrowserPolicies.Enabled`: mac dinh `false`; neu bat thi service moi ghi registry browser policy.
-- `Tamper.RestoreSettings`: mac dinh `false`; safe-mode khong tu restore cau hinh he thong.
-- `PassiveDnsMonitor.Enabled`: mac dinh `true`.
-- `NetworkPosture.ActionOnUnsafePosture`: mac dinh `LogOnly`, khong shutdown chi vi DNS/firewall/policy chua duoc enforce.
-- `ProcessRules.AllowedWorkVpnProcesses`: VPN cong viec duoc log-only, khong shutdown mac dinh.
-- `ProcessRules.ActionOnWorkVpnDetected`: mac dinh `LogOnly`.
-- `ProcessRules.BlockedProcessNames`: Tor/proxy bypass bi coi la vi pham nghiem trong.
-- `ManagedBrowserEndpoint.Enabled`: source mac dinh `false`; installer bat `true` va sinh token ngau nhien tren ban da cai.
-- `ManagedBrowserEndpoint.ChromeExtensionId` / `EdgeExtensionId`: ID extension da publish/pack de force-install.
-- `ManagedBrowserEndpoint.UpdateUrl`: update manifest URL cho Chrome/Edge force-install.
-- `BlocklistUpdates.RemoteUrl`: HTTPS URL tai blocklist ngoai.
-- `BlocklistUpdates.Sha256`: SHA-256 bat buoc cua remote blocklist. Neu trong hoac khong khop, remote list bi tu choi va service dung local/cache cu.
-- `LegacyExtensionEndpointEnabled`: mac dinh `false`; chi bat neu van dung extension legacy va da thay `Token`.
-- `Token`: chi dung cho endpoint extension legacy. Placeholder `CHANGE_THIS_SECRET_TOKEN` luon bi tu choi.
-
-## Dong Goi Edge Add-ons
+## Cap nhat
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\package-edge-extension.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\publish-service.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\apply-installed-service-update.ps1
 ```
 
-File upload nam trong `dist\edge-addons`. Khong upload `.crx` hoac `.pem` len Edge Add-ons; store can `.zip` chua manifest, JS, schema va icons.
+## Go cai dat
 
-Blocklist local nam tai `src/Guard.Service/Config/adult-domains.txt`.
-
-## Che Do Strict Opt-in
-
-Neu chap nhan tac dong toi cau hinh mang, admin co the bat:
-
-```json
-"Dns": { "Enabled": true },
-"Enforcement": {
-  "ApplyOnStartup": true,
-  "ConfigureDnsAdapters": true,
-  "ConfigureFirewallRules": true
-},
-"BrowserPolicies": { "Enabled": true },
-"Tamper": { "RestoreSettings": true }
-```
-
-Che do nay co the doi DNS adapter ve `127.0.0.1`, tao firewall rule va ghi registry policy. Nen test trong VM hoac may phu truoc.
-
-## Go Cai Dat
-
-Mo PowerShell voi quyen Administrator:
+Ma go cai dat thay doi theo gio va chi co Quan tri vien lay duoc:
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\show-uninstall-code.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-service.ps1 -UninstallCode <MA_HIEN_TAI>
 ```
 
-Script go service va xoa firewall rule co prefix `AdultContentShutdownGuard*` neu ton tai. Script khong xoa browser policy cua nguoi dung trong safe-mode. Log chi bi xoa neu ban xac nhan.
+Uninstaller xoa firewall rule cua dich vu va khoi phuc DNS da sao luu truoc khi cai dat.
 
-## Cau Truc Repository
+## Cau hinh
 
-- `src/Guard.Service`: Windows Service, passive DNS monitor, opt-in DNS resolver, enforcement, monitor va logger.
-- `browser-extension`: extension browser-managed de publish len Edge Add-ons/Chrome Web Store.
-- `docs`: huong dan publish Edge Add-ons, privacy policy template va store listing copy.
-- `scripts`: publish, install va uninstall.
-- `tests/Guard.Service.Tests`: unit test cho safe defaults, passive DNS parser, domain matching va DNS packet behavior.
-- `tests/adult-test-page.html`: trang test legacy cho extension.
+File: `src\Guard.Service\appsettings.json`
+
+- `DryRun`: dat `true` de chi ghi log khi thu nghiem.
+- `Dns.ListenAddresses`: phai giu ca `127.0.0.1` va `::1` de khong co duong vuot qua IPv6.
+- `BlocklistUpdates.RemoteUrl` va `Sha256`: them danh sach chan ngoai neu co, bat buoc la HTTPS va SHA-256 dung.
+- `ProcessRules.BlockedProcessNames`: bo sung ten tien trinh vuot qua can chan.
+
+## Kiem thu
+
+```powershell
+dotnet test .\AdultContentShutdownGuard.sln -c Release
+```
+
+Kiem tra them tren may cai dat bang PowerShell Quan tri vien:
+
+```powershell
+Get-DnsClientServerAddress
+Get-NetFirewallRule -DisplayName 'AdultContentShutdownGuard*'
+Get-Service AdultContentShutdownGuard
+```

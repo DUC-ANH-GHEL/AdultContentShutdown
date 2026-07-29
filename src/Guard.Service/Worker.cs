@@ -50,9 +50,10 @@ public sealed class Worker : BackgroundService
         await _fileLogger.LogAsync("INFO", "Service startup initiated.", cancellationToken: stoppingToken);
 
         await _blocklistUpdateService.InitializeAsync(stoppingToken);
+        // DNS phai san sang truoc khi doi DNS adapter de tranh mat ket noi tam thoi.
+        await _localDnsResolverService.StartAsync(stoppingToken);
         await _systemEnforcementService.ApplyAsync(stoppingToken);
         await _browserPolicyService.ApplyAsync(stoppingToken);
-        await _localDnsResolverService.StartAsync(stoppingToken);
         await _passiveDnsMonitorService.StartAsync(stoppingToken);
         await _networkPostureMonitorService.StartAsync(stoppingToken);
         await _localHttpServer.StartAsync(stoppingToken);
@@ -68,7 +69,7 @@ public sealed class Worker : BackgroundService
         }
 
         _logger.LogInformation("AdultContentShutdownGuard service is stopping.");
-        await _fileLogger.LogAsync("INFO", "Service shutdown initiated.", cancellationToken: CancellationToken.None);
+        await _fileLogger.LogAsync("INFO", "Service stop initiated.", cancellationToken: CancellationToken.None);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)

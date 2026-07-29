@@ -40,9 +40,14 @@ public sealed class GuardEventService
             _ => _options.Enforcement.ActionOnViolation
         };
 
-        return Enum.TryParse<GuardAction>(configured, ignoreCase: true, out var action)
-            ? action
-            : GuardAction.Shutdown;
+        if (!Enum.TryParse<GuardAction>(configured, ignoreCase: true, out var action))
+        {
+            return GuardAction.LogOnly;
+        }
+
+        return action == GuardAction.Shutdown && !_options.AllowMachineShutdown
+            ? GuardAction.LogOnly
+            : action;
     }
 
     private static string Describe(GuardEvent guardEvent)
@@ -55,7 +60,6 @@ public sealed class GuardEventService
             GuardEventKind.WorkVpnDetected => $"Work VPN detected: {guardEvent.Reason}",
             GuardEventKind.UnsafeNetworkPosture => $"Unsafe network posture: {guardEvent.Reason}",
             GuardEventKind.PolicyViolation => $"Policy violation: {guardEvent.Reason}",
-            GuardEventKind.LegacyExtensionViolation => "Legacy extension violation received.",
             _ => guardEvent.Reason ?? guardEvent.EventKind.ToString()
         };
     }

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using AdultContentShutdownGuard.Guard.Service.Models;
 using Microsoft.Extensions.Options;
 
@@ -57,11 +59,13 @@ public sealed class SystemEnforcementService
 
     private async Task ConfigureDnsAdaptersAsync(CancellationToken cancellationToken)
     {
-        var dns = _options.Dns.ListenAddress;
-        var script = "$servers=@('" + EscapePowerShell(dns) + "');" +
-                     "Get-DnsClientServerAddress -AddressFamily IPv4 | " +
-                     "Where-Object { $_.InterfaceAlias -notmatch 'Loopback|vEthernet' } | " +
-                     "ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.InterfaceIndex -ServerAddresses $servers -ErrorAction SilentlyContinue }";
+        var ipv4 = EscapePowerShell(GetLoopbackAddress(AddressFamily.InterNetwork));
+        var ipv6 = EscapePowerShell(GetLoopbackAddress(AddressFamily.InterNetworkV6));
+        var script = "$adapters=Get-NetAdapter -IncludeHidden -ErrorAction SilentlyContinue | " +
+                     "Where-Object { $_.Status -ne 'Disabled' -and $_.Name -notmatch 'Loopback' };" +
+                     "foreach($adapter in $adapters) { " +
+                     "Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv4 -ServerAddresses @('" + ipv4 + "') -ErrorAction SilentlyContinue;" +
+                     "Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv6 -ServerAddresses @('" + ipv6 + "') -ErrorAction SilentlyContinue }";
         await _commandRunner.RunPowerShellAsync(script, cancellationToken);
     }
 
@@ -72,11 +76,19 @@ public sealed class SystemEnforcementService
                      "$paths=@(" +
                      "\"$env:ProgramFiles\\Google\\Chrome\\Application\\chrome.exe\"," +
                      "\"${env:ProgramFiles(x86)}\\Google\\Chrome\\Application\\chrome.exe\"," +
+                     "\"$env:LOCALAPPDATA\\Google\\Chrome\\Application\\chrome.exe\"," +
                      "\"$env:ProgramFiles\\Microsoft\\Edge\\Application\\msedge.exe\"," +
                      "\"${env:ProgramFiles(x86)}\\Microsoft\\Edge\\Application\\msedge.exe\"," +
+                     "\"$env:LOCALAPPDATA\\Microsoft\\Edge\\Application\\msedge.exe\"," +
                      "\"$env:ProgramFiles\\Mozilla Firefox\\firefox.exe\"," +
-                     "\"${env:ProgramFiles(x86)}\\Mozilla Firefox\\firefox.exe\");" +
-                     "$paths | Where-Object { Test-Path $_ } | ForEach-Object {" +
+                     "\"${env:ProgramFiles(x86)}\\Mozilla Firefox\\firefox.exe\"," +
+                     "\"$env:LOCALAPPDATA\\Mozilla Firefox\\firefox.exe\"," +
+                     "\"$env:ProgramFiles\\BraveSoftware\\Brave-Browser\\Application\\brave.exe\"," +
+                     "\"$env:LOCALAPPDATA\\BraveSoftware\\Brave-Browser\\Application\\brave.exe\"," +
+                     "\"$env:ProgramFiles\\Opera\\opera.exe\"," +
+                     "\"$env:LOCALAPPDATA\\Programs\\Opera\\opera.exe\"," +
+                     "\"$env:LOCALAPPDATA\\Vivaldi\\Application\\vivaldi.exe\");" +
+                     "$paths | Where-Object { Test-Path $_ } | Select-Object -Unique | ForEach-Object {" +
                      "New-NetFirewallRule -DisplayName ('" + RulePrefix + " Block UDP DNS ' + [IO.Path]::GetFileNameWithoutExtension($_)) -Direction Outbound -Action Block -Program $_ -Protocol UDP -RemotePort 53 | Out-Null;" +
                      "New-NetFirewallRule -DisplayName ('" + RulePrefix + " Block TCP DNS ' + [IO.Path]::GetFileNameWithoutExtension($_)) -Direction Outbound -Action Block -Program $_ -Protocol TCP -RemotePort 53 | Out-Null }";
         await _commandRunner.RunPowerShellAsync(script, cancellationToken);
@@ -84,9 +96,11 @@ public sealed class SystemEnforcementService
 
     private async Task<bool> DnsAdaptersUseLocalResolverAsync(CancellationToken cancellationToken)
     {
-        var script = "$bad=Get-DnsClientServerAddress -AddressFamily IPv4 | " +
-                     "Where-Object { $_.InterfaceAlias -notmatch 'Loopback|vEthernet' -and ($_.ServerAddresses -notcontains '" + EscapePowerShell(_options.Dns.ListenAddress) + "') };" +
-                     "if ($bad) { exit 2 } else { exit 0 }";
+        var ipv4 = EscapePowerShell(GetLoopbackAddress(AddressFamily.InterNetwork));
+        var ipv6 = EscapePowerShell(GetLoopbackAddress(AddressFamily.InterNetworkV6));
+        var script = "$v4=Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notmatch 'Loopback' -and $_.ServerAddresses.Count -gt 0 -and ($_.ServerAddresses -notcontains '" + ipv4 + "') };" +
+                     "$v6=Get-DnsClientServerAddress -AddressFamily IPv6 | Where-Object { $_.InterfaceAlias -notmatch 'Loopback' -and $_.ServerAddresses.Count -gt 0 -and ($_.ServerAddresses -notcontains '" + ipv6 + "') };" +
+                     "if ($v4 -or $v6) { exit 2 } else { exit 0 }";
         return await _commandRunner.RunPowerShellAsync(script, cancellationToken) == 0;
     }
 
@@ -97,8 +111,13 @@ public sealed class SystemEnforcementService
         return await _commandRunner.RunPowerShellAsync(script, cancellationToken) == 0;
     }
 
-    private static string EscapePowerShell(string value)
+    private string GetLoopbackAddress(AddressFamily addressFamily)
     {
-        return value.Replace("'", "''", StringComparison.Ordinal);
+        var address = _options.Dns.ListenAddresses
+            .Select(IPAddress.Parse)
+            .FirstOrDefault(candidate => candidate.AddressFamily == addressFamily && IPAddress.IsLoopback(candidate));
+        return address?.ToString() ?? throw new InvalidOperationException($"DNS must listen on a {addressFamily} loopback address.");
     }
+
+    private static string EscapePowerShell(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 }

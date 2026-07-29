@@ -57,10 +57,30 @@ public sealed class GuardEventServiceTests
     }
 
     [Fact]
-    public async Task HandleAsync_keeps_tor_bypass_as_shutdown_action_in_dry_run()
+    public async Task HandleAsync_never_uses_shutdown_without_explicit_machine_shutdown_opt_in()
     {
         var options = CreateOptions();
         options.DryRun = true;
+        options.Enforcement.ActionOnTamper = "Shutdown";
+        var service = CreateService(options);
+        var guardEvent = new GuardEvent
+        {
+            EventKind = GuardEventKind.DnsBypassAttempt,
+            MatchedRule = "tor"
+        };
+
+        await service.HandleAsync(guardEvent, CancellationToken.None);
+
+        Assert.Equal("DryRun:LogOnly", guardEvent.ActionTaken);
+    }
+
+    [Fact]
+    public async Task HandleAsync_allows_shutdown_only_when_explicitly_opted_in()
+    {
+        var options = CreateOptions();
+        options.DryRun = true;
+        options.AllowMachineShutdown = true;
+        options.Enforcement.ActionOnTamper = "Shutdown";
         var service = CreateService(options);
         var guardEvent = new GuardEvent
         {

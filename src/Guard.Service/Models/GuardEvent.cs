@@ -8,7 +8,6 @@ public enum GuardEventKind
     DnsBypassAttempt,
     WorkVpnDetected,
     UnsafeNetworkPosture,
-    LegacyExtensionViolation,
     HealthCheck
 }
 
@@ -32,5 +31,4 @@ public sealed class GuardEvent
 
     public string[] MatchedRules { get; set; } = [];
 
-    public ViolationRequest? LegacyRequest { get; set; }
 }

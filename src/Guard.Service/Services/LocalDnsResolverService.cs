@@ -13,10 +13,9 @@ public sealed class LocalDnsResolverService
     private readonly FileLogger _fileLogger;
     private readonly ILogger<LocalDnsResolverService> _logger;
     private CancellationTokenSource? _cancellationTokenSource;
-    private UdpClient? _udpListener;
-    private TcpListener? _tcpListener;
-    private Task? _udpTask;
-    private Task? _tcpTask;
+    private readonly List<UdpClient> _udpListeners = [];
+    private readonly List<TcpListener> _tcpListeners = [];
+    private readonly List<Task> _listenerTasks = [];
 
     public LocalDnsResolverService(
         IOptions<GuardOptions> options,
@@ -34,40 +33,65 @@ public sealed class LocalDnsResolverService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (!_options.Dns.Enabled || _udpListener is not null)
+        if (!_options.Dns.Enabled || _udpListeners.Count > 0)
         {
             return Task.CompletedTask;
         }
 
-        var listenAddress = IPAddress.Parse(_options.Dns.ListenAddress);
-        var endpoint = new IPEndPoint(listenAddress, _options.Dns.ListenPort);
         _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _udpListener = new UdpClient(endpoint);
-        _tcpListener = new TcpListener(endpoint);
-        _tcpListener.Start();
-        _udpTask = Task.Run(() => UdpLoopAsync(_cancellationTokenSource.Token), CancellationToken.None);
-        _tcpTask = Task.Run(() => TcpLoopAsync(_cancellationTokenSource.Token), CancellationToken.None);
-        _logger.LogInformation("Local DNS resolver started on {Endpoint}", endpoint);
+        foreach (var address in _options.Dns.ListenAddresses.Select(IPAddress.Parse).Distinct())
+        {
+            if (!IPAddress.IsLoopback(address))
+            {
+                throw new InvalidOperationException("Local DNS resolver only accepts loopback listen addresses.");
+            }
+
+            var endpoint = new IPEndPoint(address, _options.Dns.ListenPort);
+            var udpListener = new UdpClient(endpoint);
+            var tcpListener = new TcpListener(endpoint);
+            tcpListener.Start();
+            _udpListeners.Add(udpListener);
+            _tcpListeners.Add(tcpListener);
+            _listenerTasks.Add(Task.Run(() => UdpLoopAsync(udpListener, _cancellationTokenSource.Token), CancellationToken.None));
+            _listenerTasks.Add(Task.Run(() => TcpLoopAsync(tcpListener, _cancellationTokenSource.Token), CancellationToken.None));
+            _logger.LogInformation("Local DNS resolver started on {Endpoint}", endpoint);
+        }
+
+        if (_udpListeners.Count == 0)
+        {
+            throw new InvalidOperationException("At least one local DNS listen address is required.");
+        }
+
         return Task.CompletedTask;
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         _cancellationTokenSource?.Cancel();
-        _udpListener?.Dispose();
-        _tcpListener?.Stop();
-        await WaitAsync(_udpTask, cancellationToken);
-        await WaitAsync(_tcpTask, cancellationToken);
+        foreach (var listener in _udpListeners)
+        {
+            listener.Dispose();
+        }
+
+        foreach (var listener in _tcpListeners)
+        {
+            listener.Stop();
+        }
+
+        await Task.WhenAll(_listenerTasks.Select(task => WaitAsync(task, cancellationToken)));
+        _udpListeners.Clear();
+        _tcpListeners.Clear();
+        _listenerTasks.Clear();
     }
 
-    private async Task UdpLoopAsync(CancellationToken cancellationToken)
+    private async Task UdpLoopAsync(UdpClient udpListener, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                var result = await _udpListener!.ReceiveAsync(cancellationToken);
-                _ = Task.Run(() => HandleUdpQueryAsync(result, cancellationToken), cancellationToken);
+                var result = await udpListener.ReceiveAsync(cancellationToken);
+                _ = Task.Run(() => HandleUdpQueryAsync(udpListener, result, cancellationToken), cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -84,13 +108,13 @@ public sealed class LocalDnsResolverService
         }
     }
 
-    private async Task TcpLoopAsync(CancellationToken cancellationToken)
+    private async Task TcpLoopAsync(TcpListener tcpListener, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                var client = await _tcpListener!.AcceptTcpClientAsync(cancellationToken);
+                var client = await tcpListener.AcceptTcpClientAsync(cancellationToken);
                 _ = Task.Run(() => HandleTcpClientAsync(client, cancellationToken), cancellationToken);
             }
             catch (OperationCanceledException)
@@ -108,12 +132,12 @@ public sealed class LocalDnsResolverService
         }
     }
 
-    private async Task HandleUdpQueryAsync(UdpReceiveResult result, CancellationToken cancellationToken)
+    private async Task HandleUdpQueryAsync(UdpClient udpListener, UdpReceiveResult result, CancellationToken cancellationToken)
     {
         var response = await ResolveAsync(result.Buffer, result.RemoteEndPoint.Address.ToString(), cancellationToken);
         if (response is not null)
         {
-            await _udpListener!.SendAsync(response, result.RemoteEndPoint, cancellationToken);
+            await udpListener.SendAsync(response, result.RemoteEndPoint, cancellationToken);
         }
     }
 
@@ -190,8 +214,14 @@ public sealed class LocalDnsResolverService
                 using var client = new UdpClient();
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 timeout.CancelAfter(Math.Max(250, _options.Dns.UpstreamTimeoutMilliseconds));
-                await client.SendAsync(query, new IPEndPoint(IPAddress.Parse(upstream), 53), timeout.Token);
+                client.Connect(IPAddress.Parse(upstream), 53);
+                await client.SendAsync(query, timeout.Token);
                 var result = await client.ReceiveAsync(timeout.Token);
+                if (result.Buffer.Length < 2 || result.Buffer[0] != query[0] || result.Buffer[1] != query[1])
+                {
+                    continue;
+                }
+
                 return result.Buffer;
             }
             catch

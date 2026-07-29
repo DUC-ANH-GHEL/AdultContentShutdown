@@ -61,6 +61,23 @@ public sealed class BrowserPolicyService
         {
             key.SetValue("ProxyMode", "direct", RegistryValueKind.String);
         }
+
+        if (_options.BrowserPolicies.DisablePrivateBrowsing)
+        {
+            if (path.Contains("Google", StringComparison.OrdinalIgnoreCase))
+            {
+                key.SetValue("IncognitoModeAvailability", 1, RegistryValueKind.DWord);
+            }
+            else
+            {
+                key.SetValue("InPrivateModeAvailability", 1, RegistryValueKind.DWord);
+            }
+        }
+
+        if (_options.BrowserPolicies.DisableGuestMode)
+        {
+            key.SetValue("BrowserGuestModeEnabled", 0, RegistryValueKind.DWord);
+        }
     }
 
     private void ApplyFirefoxPolicy()
@@ -75,6 +92,12 @@ public sealed class BrowserPolicyService
         {
             key.SetValue("Enabled", 0, RegistryValueKind.DWord);
             key.SetValue("Locked", 1, RegistryValueKind.DWord);
+        }
+
+        if (_options.BrowserPolicies.DisablePrivateBrowsing)
+        {
+            using var firefoxRoot = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Mozilla\Firefox");
+            firefoxRoot?.SetValue("DisablePrivateBrowsing", 1, RegistryValueKind.DWord);
         }
     }
 
@@ -115,6 +138,22 @@ public sealed class BrowserPolicyService
             return false;
         }
 
+        if (_options.BrowserPolicies.DisablePrivateBrowsing)
+        {
+            var valueName = path.Contains("Google", StringComparison.OrdinalIgnoreCase)
+                ? "IncognitoModeAvailability"
+                : "InPrivateModeAvailability";
+            if (Convert.ToInt32(key.GetValue(valueName, 0)) != 1)
+            {
+                return false;
+            }
+        }
+
+        if (_options.BrowserPolicies.DisableGuestMode && Convert.ToInt32(key.GetValue("BrowserGuestModeEnabled", 1)) != 0)
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -131,7 +170,19 @@ public sealed class BrowserPolicyService
             return true;
         }
 
-        return Convert.ToInt32(key.GetValue("Enabled", 1)) == 0 &&
-               Convert.ToInt32(key.GetValue("Locked", 0)) == 1;
+        var dohIsDisabled = Convert.ToInt32(key.GetValue("Enabled", 1)) == 0 &&
+                            Convert.ToInt32(key.GetValue("Locked", 0)) == 1;
+        if (!dohIsDisabled)
+        {
+            return false;
+        }
+
+        if (!_options.BrowserPolicies.DisablePrivateBrowsing)
+        {
+            return true;
+        }
+
+        using var firefoxRoot = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Mozilla\Firefox");
+        return Convert.ToInt32(firefoxRoot?.GetValue("DisablePrivateBrowsing", 0)) == 1;
     }
 }

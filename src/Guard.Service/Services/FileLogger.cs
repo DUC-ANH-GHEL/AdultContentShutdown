@@ -19,14 +19,9 @@ public sealed class FileLogger
         Directory.CreateDirectory(_options.LogDirectory);
     }
 
-    public Task LogAsync(
-        string level,
-        string message,
-        ViolationRequest? request = null,
-        IEnumerable<string>? matchedRules = null,
-        CancellationToken cancellationToken = default)
+    public Task LogAsync(string level, string message, CancellationToken cancellationToken = default)
     {
-        return WriteLineAsync(level, message, request, matchedRules, cancellationToken);
+        return WriteLineAsync(level, message, cancellationToken);
     }
 
     public Task LogAsync(
@@ -41,8 +36,6 @@ public sealed class FileLogger
     private async Task WriteLineAsync(
         string level,
         string message,
-        ViolationRequest? request,
-        IEnumerable<string>? matchedRules,
         CancellationToken cancellationToken)
     {
         try
@@ -58,12 +51,7 @@ public sealed class FileLogger
                 {
                     timestamp = DateTimeOffset.UtcNow,
                     level,
-                    message,
-                    url = request?.Url,
-                    host = request?.Host,
-                    title = request?.Title,
-                    reason = request?.Reason,
-                    matchedRules = matchedRules?.ToArray() ?? request?.MatchedRules?.ToArray() ?? Array.Empty<string>()
+                    message
                 };
 
                 var line = JsonSerializer.Serialize(logEntry, _jsonSerializerOptions);

@@ -4,11 +4,12 @@ public sealed class GuardOptions
 {
     public int Port { get; set; } = 8765;
 
-    public string Token { get; set; } = "CHANGE_THIS_SECRET_TOKEN";
-
-    public bool LegacyExtensionEndpointEnabled { get; set; }
-
     public bool DryRun { get; set; } = false;
+
+    /// <summary>
+    /// Chi cho phep goi shutdown.exe khi quan tri vien chu dong bat co nay.
+    /// </summary>
+    public bool AllowMachineShutdown { get; set; }
 
     public string ShutdownCommand { get; set; } = "shutdown.exe";
 
@@ -40,14 +41,13 @@ public sealed class GuardOptions
 
     public NetworkPostureOptions NetworkPosture { get; set; } = new();
 
-    public ManagedBrowserEndpointOptions ManagedBrowserEndpoint { get; set; } = new();
 }
 
 public sealed class DnsOptions
 {
-    public bool Enabled { get; set; }
+    public bool Enabled { get; set; } = true;
 
-    public string ListenAddress { get; set; } = "127.0.0.1";
+    public string[] ListenAddresses { get; set; } = ["127.0.0.1", "::1"];
 
     public int ListenPort { get; set; } = 53;
 
@@ -55,7 +55,7 @@ public sealed class DnsOptions
 
     public int UpstreamTimeoutMilliseconds { get; set; } = 2500;
 
-    public bool ReturnNxDomain { get; set; }
+    public bool ReturnNxDomain { get; set; } = true;
 
     public string SinkholeAddress { get; set; } = "0.0.0.0";
 }
@@ -64,24 +64,28 @@ public sealed class EnforcementOptions
 {
     public string ActionOnViolation { get; set; } = "LogOnly";
 
-    public string ActionOnTamper { get; set; } = "Shutdown";
+    public string ActionOnTamper { get; set; } = "LogOnly";
 
-    public bool ApplyOnStartup { get; set; }
+    public bool ApplyOnStartup { get; set; } = true;
 
-    public bool ConfigureDnsAdapters { get; set; }
+    public bool ConfigureDnsAdapters { get; set; } = true;
 
-    public bool ConfigureFirewallRules { get; set; }
+    public bool ConfigureFirewallRules { get; set; } = true;
 }
 
 public sealed class BrowserPolicyOptions
 {
-    public bool Enabled { get; set; }
+    public bool Enabled { get; set; } = true;
 
     public bool DisableDnsOverHttps { get; set; } = true;
 
     public bool DisableQuic { get; set; } = true;
 
-    public bool LockProxySettings { get; set; }
+    public bool LockProxySettings { get; set; } = true;
+
+    public bool DisablePrivateBrowsing { get; set; } = true;
+
+    public bool DisableGuestMode { get; set; } = true;
 }
 
 public sealed class TamperOptions
@@ -90,7 +94,7 @@ public sealed class TamperOptions
 
     public int CheckIntervalSeconds { get; set; } = 30;
 
-    public bool RestoreSettings { get; set; }
+    public bool RestoreSettings { get; set; } = true;
 }
 
 public sealed class ProcessRulesOptions
@@ -152,19 +156,4 @@ public sealed class NetworkPostureOptions
     public int CheckIntervalSeconds { get; set; } = 60;
 
     public string ActionOnUnsafePosture { get; set; } = "LogOnly";
-}
-
-public sealed class ManagedBrowserEndpointOptions
-{
-    public bool Enabled { get; set; }
-
-    public string ChromeExtensionId { get; set; } = "";
-
-    public string EdgeExtensionId { get; set; } = "";
-
-    public string UpdateUrl { get; set; } = "";
-
-    public string UpdateManifestPath { get; set; } = "";
-
-    public string CrxPath { get; set; } = "";
 }

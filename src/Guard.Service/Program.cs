@@ -3,14 +3,6 @@ using AdultContentShutdownGuard.Guard.Service;
 using AdultContentShutdownGuard.Guard.Service.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Hosting.WindowsServices;
-
-if (args.Length == 2 && string.Equals(args[0], "--extension-id", StringComparison.OrdinalIgnoreCase))
-{
-    var pem = await File.ReadAllTextAsync(args[1]);
-    Console.WriteLine(ChromeExtensionId.FromPemPrivateKey(pem));
-    return;
-}
 
 var host = Host.CreateDefaultBuilder(args)
     .UseWindowsService(options => options.ServiceName = "AdultContentShutdownGuard")
@@ -29,7 +21,6 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<BrowserPolicyService>();
         services.AddSingleton<TamperMonitorService>();
         services.AddSingleton<ProcessMonitorService>();
-        services.AddSingleton<ContentViolationService>();
         services.AddSingleton<LocalHttpServer>();
         services.AddHostedService<Worker>();
     })
