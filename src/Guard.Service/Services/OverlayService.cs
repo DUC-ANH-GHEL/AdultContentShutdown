@@ -64,7 +64,8 @@ public sealed class OverlayService : IOverlayLauncher
 
             if (exitCode == 0)
             {
-                Interlocked.Exchange(ref _nextLaunchAllowedTimestamp, now + (long)(_options.Overlay.DurationSeconds * Stopwatch.Frequency));
+                var cooldownSeconds = _options.Overlay.DurationSeconds + Math.Max(15, _options.DebounceSeconds);
+                Interlocked.Exchange(ref _nextLaunchAllowedTimestamp, now + (long)(cooldownSeconds * Stopwatch.Frequency));
             }
         }
         finally
