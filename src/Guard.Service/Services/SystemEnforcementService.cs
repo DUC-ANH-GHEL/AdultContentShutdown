@@ -59,13 +59,21 @@ public sealed class SystemEnforcementService
 
     private async Task ConfigureDnsAdaptersAsync(CancellationToken cancellationToken)
     {
-        var ipv4 = EscapePowerShell(GetLoopbackAddress(AddressFamily.InterNetwork));
-        var ipv6 = EscapePowerShell(GetLoopbackAddress(AddressFamily.InterNetworkV6));
+        var resolverAddresses = string.Join(
+            ",",
+            _options.Dns.ListenAddresses
+                .Select(IPAddress.Parse)
+                .Where(IPAddress.IsLoopback)
+                .Select(address => "'" + EscapePowerShell(address.ToString()) + "'"));
+        if (string.IsNullOrWhiteSpace(resolverAddresses))
+        {
+            throw new InvalidOperationException("DNS must listen on at least one loopback address.");
+        }
+
         var script = "$adapters=Get-NetAdapter -IncludeHidden -ErrorAction SilentlyContinue | " +
                      "Where-Object { $_.Status -ne 'Disabled' -and $_.Name -notmatch 'Loopback' };" +
                      "foreach($adapter in $adapters) { " +
-                     "Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv4 -ServerAddresses @('" + ipv4 + "') -ErrorAction SilentlyContinue;" +
-                     "Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv6 -ServerAddresses @('" + ipv6 + "') -ErrorAction SilentlyContinue }";
+                     "Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -ServerAddresses @(" + resolverAddresses + ") -ErrorAction SilentlyContinue }";
         await _commandRunner.RunPowerShellAsync(script, cancellationToken);
     }
 
