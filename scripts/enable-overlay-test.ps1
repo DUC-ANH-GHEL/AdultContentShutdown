@@ -52,7 +52,7 @@ $json | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $settingsPath -Encod
 
 $taskName = 'AdultContentShutdownGuard Overlay'
 $taskAction = New-ScheduledTaskAction -Execute $overlayExe -Argument "--duration-seconds $DurationSeconds"
-$taskPrincipal = New-ScheduledTaskPrincipal -UserId $UserName -LogonType InteractiveToken -RunLevel Limited
+$taskPrincipal = New-ScheduledTaskPrincipal -UserId $UserName -LogonType Interactive -RunLevel Limited
 $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 Register-ScheduledTask -TaskName $taskName -Action $taskAction -Principal $taskPrincipal -Settings $taskSettings -Description 'Hien bo dem tam dung khi AdultContentShutdownGuard phat hien vi pham.' -Force | Out-Null
 
