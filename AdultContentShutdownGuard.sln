@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guard.Service", "src\Guard.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guard.Service.Tests", "tests\Guard.Service.Tests\Guard.Service.Tests.csproj", "{7D5F7261-5686-4E40-BC3E-B43EA7E4D4C3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guard.Overlay", "src\Guard.Overlay\Guard.Overlay.csproj", "{C4B2F2A8-1BA0-4F3D-9A87-7C95D23B3AA2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{7D5F7261-5686-4E40-BC3E-B43EA7E4D4C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D5F7261-5686-4E40-BC3E-B43EA7E4D4C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D5F7261-5686-4E40-BC3E-B43EA7E4D4C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4B2F2A8-1BA0-4F3D-9A87-7C95D23B3AA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4B2F2A8-1BA0-4F3D-9A87-7C95D23B3AA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4B2F2A8-1BA0-4F3D-9A87-7C95D23B3AA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4B2F2A8-1BA0-4F3D-9A87-7C95D23B3AA2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
