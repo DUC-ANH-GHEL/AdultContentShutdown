@@ -119,7 +119,7 @@ public sealed class PassiveDnsMonitorService
             return;
         }
 
-        if (_blocklistUpdateService.Current.IsBlocked(domain, out var matchedRule))
+        if (_blocklistUpdateService.IsBlocked(domain, out var matchedRule))
         {
             await _guardEventService.HandleAsync(new GuardEvent
             {

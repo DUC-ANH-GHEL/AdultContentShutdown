@@ -43,6 +43,8 @@ public sealed class GuardOptions
 
     public OverlayOptions Overlay { get; set; } = new();
 
+    public HostnameHeuristicsOptions HostnameHeuristics { get; set; } = new();
+
 }
 
 public sealed class DnsOptions
@@ -165,4 +167,13 @@ public sealed class OverlayOptions
     public bool Enabled { get; set; }
 
     public int DurationSeconds { get; set; } = 300;
+}
+
+public sealed class HostnameHeuristicsOptions
+{
+    public bool Enabled { get; set; } = true;
+
+    public int MinimumScoreToBlock { get; set; } = 100;
+
+    public string[] AllowedDomains { get; set; } = [];
 }

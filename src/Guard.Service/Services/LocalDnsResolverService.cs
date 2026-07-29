@@ -183,7 +183,7 @@ public sealed class LocalDnsResolverService
             return null;
         }
 
-        if (_blocklistUpdateService.Current.IsBlocked(message.QuestionName, out var matchedRule))
+        if (_blocklistUpdateService.IsBlocked(message.QuestionName, out var matchedRule))
         {
             await _guardEventService.HandleAsync(new GuardEvent
             {

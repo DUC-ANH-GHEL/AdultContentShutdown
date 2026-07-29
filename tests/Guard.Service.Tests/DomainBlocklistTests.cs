@@ -1,4 +1,5 @@
 using AdultContentShutdownGuard.Guard.Service.Services;
+using AdultContentShutdownGuard.Guard.Service.Models;
 using Xunit;
 
 namespace Guard.Service.Tests;
@@ -62,5 +63,56 @@ public sealed class DomainBlocklistTests
         {
             File.Delete(file);
         }
+    }
+
+    [Theory]
+    [InlineData("javhdz.red", "heuristic:jav-hd")]
+    [InlineData("CDN.JAVHDZ.RED.", "heuristic:jav-hd")]
+    [InlineData("freeporn.example", "heuristic:porn")]
+    [InlineData("watch-hentai.example", "heuristic:hentai")]
+    [InlineData("example.xxx", "heuristic:xxx")]
+    [InlineData("sex-video.example", "heuristic:sex-media")]
+    public void HostnameHeuristics_blocks_high_confidence_variants(string host, string expectedRule)
+    {
+        var classifier = new HostnameHeuristicClassifier(new HostnameHeuristicsOptions());
+
+        var blocked = classifier.IsBlocked(host, out var matchedRule);
+
+        Assert.True(blocked);
+        Assert.Equal(expectedRule, matchedRule);
+    }
+
+    [Theory]
+    [InlineData("java.com")]
+    [InlineData("javelin.example")]
+    [InlineData("javassist.org")]
+    [InlineData("example.com")]
+    [InlineData("newsxxx.example")]
+    [InlineData("essex-video.example")]
+    [InlineData("sexeducation.example")]
+    [InlineData("sussex.cam")]
+    [InlineData("cambridge-video.example")]
+    public void HostnameHeuristics_avoids_low_confidence_or_non_adult_hosts(string host)
+    {
+        var classifier = new HostnameHeuristicClassifier(new HostnameHeuristicsOptions());
+
+        var blocked = classifier.IsBlocked(host, out var matchedRule);
+
+        Assert.False(blocked);
+        Assert.Null(matchedRule);
+    }
+
+    [Fact]
+    public void HostnameHeuristics_respects_domain_allowlist()
+    {
+        var classifier = new HostnameHeuristicClassifier(new HostnameHeuristicsOptions
+        {
+            AllowedDomains = ["javhdz.red"]
+        });
+
+        var blocked = classifier.IsBlocked("cdn.javhdz.red", out var matchedRule);
+
+        Assert.False(blocked);
+        Assert.Null(matchedRule);
     }
 }

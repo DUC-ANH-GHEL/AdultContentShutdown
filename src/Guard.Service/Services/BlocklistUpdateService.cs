@@ -9,6 +9,7 @@ public sealed class BlocklistUpdateService
     private readonly GuardOptions _options;
     private readonly FileLogger _fileLogger;
     private readonly ILogger<BlocklistUpdateService> _logger;
+    private readonly HostnameHeuristicClassifier _hostnameHeuristicClassifier;
     private readonly HttpClient _httpClient = new();
     private DomainBlocklist _current = DomainBlocklist.Empty;
     private DateTimeOffset _lastRefresh = DateTimeOffset.MinValue;
@@ -18,9 +19,26 @@ public sealed class BlocklistUpdateService
         _options = options.Value;
         _fileLogger = fileLogger;
         _logger = logger;
+        _hostnameHeuristicClassifier = new HostnameHeuristicClassifier(_options.HostnameHeuristics);
     }
 
     public DomainBlocklist Current => _current;
+
+    public bool IsBlocked(string? host, out string? matchedRule)
+    {
+        if (_options.EnableDomainRules && _current.IsBlocked(host, out matchedRule))
+        {
+            return true;
+        }
+
+        if (_options.EnableKeywordRules && _hostnameHeuristicClassifier.IsBlocked(host, out matchedRule))
+        {
+            return true;
+        }
+
+        matchedRule = null;
+        return false;
+    }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
