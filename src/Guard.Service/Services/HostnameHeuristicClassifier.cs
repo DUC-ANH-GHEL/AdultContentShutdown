@@ -11,7 +11,7 @@ namespace AdultContentShutdownGuard.Guard.Service.Services;
 public sealed class HostnameHeuristicClassifier
 {
     private static readonly Regex SexToken = new(@"(?:^|[-\d])sex(?:$|[-\d])", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-    private static readonly Regex JavAdultLabel = new(@"^jav(?:hd|hub|most)[a-z0-9-]*$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private static readonly Regex JavAdultLabel = new(@"^jav(?:hd|hub|most|sub)[a-z0-9-]*$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly (string Marker, string Rule)[] StrongMarkers =
     [
         ("porn", "porn"),
@@ -68,10 +68,12 @@ public sealed class HostnameHeuristicClassifier
             {
                 score += 100;
                 strongestRule ??= label.StartsWith("javhd", StringComparison.OrdinalIgnoreCase)
-                    ? "jav-hd"
-                    : label.StartsWith("javhub", StringComparison.OrdinalIgnoreCase)
-                        ? "jav-hub"
-                        : "jav-most";
+                        ? "jav-hd"
+                        : label.StartsWith("javhub", StringComparison.OrdinalIgnoreCase)
+                            ? "jav-hub"
+                            : label.StartsWith("javsub", StringComparison.OrdinalIgnoreCase)
+                                ? "jav-sub"
+                                : "jav-most";
             }
 
             if (label.Contains("xxx", StringComparison.OrdinalIgnoreCase))

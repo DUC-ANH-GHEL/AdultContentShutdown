@@ -68,6 +68,8 @@ public sealed class DomainBlocklistTests
     [Theory]
     [InlineData("javhdz.red", "heuristic:jav-hd")]
     [InlineData("CDN.JAVHDZ.RED.", "heuristic:jav-hd")]
+    [InlineData("javsub.blog", "heuristic:jav-sub")]
+    [InlineData("cdn.javsub.blog", "heuristic:jav-sub")]
     [InlineData("freeporn.example", "heuristic:porn")]
     [InlineData("watch-hentai.example", "heuristic:hentai")]
     [InlineData("example.xxx", "heuristic:xxx")]
