@@ -7,6 +7,12 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        using var instanceLock = new Mutex(initiallyOwned: true, @"Local\AdultContentShutdownGuard.Overlay", out var ownsInstance);
+        if (!ownsInstance)
+        {
+            return;
+        }
+
         ApplicationConfiguration.Initialize();
         Application.Run(new CountdownOverlayApplicationContext(ReadDuration(args)));
     }
@@ -15,7 +21,7 @@ internal static class Program
     {
         const int defaultDurationSeconds = 300;
         const int minimumDurationSeconds = 5;
-        const int maximumDurationSeconds = 3600;
+        const int maximumDurationSeconds = 300;
 
         var arguments = args.ToArray();
         for (var index = 0; index < arguments.Length - 1; index++)

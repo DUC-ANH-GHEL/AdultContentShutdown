@@ -12,4 +12,4 @@ Không can thiệp vào màn hình bảo mật của Windows như UAC, màn hìn
 dotnet run --project .\src\Guard.Overlay\Guard.Overlay.csproj -- --duration-seconds 10
 ```
 
-Không truyền tham số thì thời lượng mặc định là 5 phút. Thời lượng hợp lệ từ 5 giây đến 60 phút.
+Không truyền tham số thì thời lượng mặc định là 5 phút. Thời lượng hợp lệ từ 5 giây đến 5 phút.

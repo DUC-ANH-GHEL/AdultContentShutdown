@@ -27,6 +27,7 @@ function Set-JsonProperty {
 $serviceName = 'AdultContentShutdownGuard'
 $installDir = 'C:\Program Files\AdultContentShutdownGuard'
 $publishDir = Resolve-Path (Join-Path $PSScriptRoot '..\publish\Guard.Service')
+$overlayPublishDir = Resolve-Path (Join-Path $PSScriptRoot '..\publish\Guard.Overlay')
 $settingsPath = Join-Path $installDir 'appsettings.json'
 
 if (-not (Test-Path -LiteralPath $installDir)) {
@@ -46,6 +47,10 @@ if ($service.Status -ne 'Stopped') {
 Get-ChildItem -LiteralPath $publishDir -Force |
   Where-Object { $_.Name -ne 'appsettings.json' } |
   Copy-Item -Destination $installDir -Recurse -Force
+
+New-Item -ItemType Directory -Path (Join-Path $installDir 'Overlay') -Force | Out-Null
+Get-ChildItem -LiteralPath $overlayPublishDir -Force |
+  Copy-Item -Destination (Join-Path $installDir 'Overlay') -Recurse -Force
 
 $json = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
 $json.Guard.PSObject.Properties.Remove('ManagedBrowserEndpoint')

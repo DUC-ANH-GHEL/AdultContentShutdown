@@ -93,6 +93,39 @@ public sealed class GuardEventServiceTests
         Assert.Equal("DryRun:Shutdown", guardEvent.ActionTaken);
     }
 
+    [Fact]
+    public async Task HandleAsync_requests_overlay_for_a_blocked_domain_when_not_in_dry_run()
+    {
+        var options = CreateOptions();
+        var overlay = new RecordingOverlayLauncher();
+        var service = CreateService(options, overlay);
+        var guardEvent = new GuardEvent
+        {
+            EventKind = GuardEventKind.BlockedDomain,
+            Domain = "example.test"
+        };
+
+        await service.HandleAsync(guardEvent, CancellationToken.None);
+
+        Assert.Single(overlay.Events);
+        Assert.Same(guardEvent, overlay.Events[0]);
+    }
+
+    [Fact]
+    public async Task HandleAsync_does_not_request_overlay_in_dry_run_or_for_non_violation_events()
+    {
+        var options = CreateOptions();
+        options.DryRun = true;
+        var overlay = new RecordingOverlayLauncher();
+        var service = CreateService(options, overlay);
+
+        await service.HandleAsync(new GuardEvent { EventKind = GuardEventKind.BlockedDomain }, CancellationToken.None);
+        options.DryRun = false;
+        await service.HandleAsync(new GuardEvent { EventKind = GuardEventKind.TamperDetected }, CancellationToken.None);
+
+        Assert.Empty(overlay.Events);
+    }
+
     private static GuardOptions CreateOptions()
     {
         var options = new GuardOptions
@@ -102,11 +135,24 @@ public sealed class GuardEventServiceTests
         return options;
     }
 
-    private static GuardEventService CreateService(GuardOptions options)
+    private static GuardEventService CreateService(GuardOptions options, IOverlayLauncher? overlayLauncher = null)
     {
         var wrapped = Options.Create(options);
         var logger = new FileLogger(wrapped);
         var shutdown = new ShutdownService(wrapped, logger, NullLogger<ShutdownService>.Instance);
-        return new GuardEventService(wrapped, logger, shutdown);
+        var commandRunner = new SystemCommandRunner(logger, NullLogger<SystemCommandRunner>.Instance);
+        var overlay = overlayLauncher ?? new OverlayService(wrapped, commandRunner, logger);
+        return new GuardEventService(wrapped, logger, shutdown, overlay);
+    }
+
+    private sealed class RecordingOverlayLauncher : IOverlayLauncher
+    {
+        public List<GuardEvent> Events { get; } = [];
+
+        public Task TriggerForViolationAsync(GuardEvent guardEvent, CancellationToken cancellationToken)
+        {
+            Events.Add(guardEvent);
+            return Task.CompletedTask;
+        }
     }
 }

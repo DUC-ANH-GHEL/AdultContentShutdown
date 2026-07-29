@@ -55,14 +55,24 @@ $programDataDir = 'C:\ProgramData\AdultContentShutdownGuard'
 $installDir = 'C:\Program Files\AdultContentShutdownGuard'
 $publishDir = Join-Path $PSScriptRoot '..\publish\Guard.Service'
 $publishScript = Join-Path $PSScriptRoot 'publish-service.ps1'
+$overlayPublishDir = Join-Path $PSScriptRoot '..\publish\Guard.Overlay'
+$overlayPublishScript = Join-Path $PSScriptRoot 'publish-overlay.ps1'
 $installedSettingsPath = Join-Path $installDir 'appsettings.json'
 
 if (-not (Test-Path $publishDir)) {
   & $publishScript
 }
 
+if (-not (Test-Path $overlayPublishDir)) {
+  & $overlayPublishScript
+}
+
 if (-not (Test-Path $publishDir)) {
   throw "Khong tim thay thu muc publish: $publishDir"
+}
+
+if (-not (Test-Path $overlayPublishDir)) {
+  throw "Khong tim thay thu muc publish cua bo dem: $overlayPublishDir"
 }
 
 $legacyExtensionIds = @()
@@ -99,6 +109,7 @@ if (-not (Test-Path -LiteralPath $dnsBackupPath)) {
 }
 
 Copy-Item -Path (Join-Path $publishDir '*') -Destination $installDir -Recurse -Force
+Copy-Item -Path (Join-Path $overlayPublishDir '*') -Destination (Join-Path $installDir 'Overlay') -Recurse -Force
 Copy-Item -Path (Join-Path $PSScriptRoot '..\src\Guard.Service\appsettings.json') -Destination $installedSettingsPath -Force
 
 # The service runs as LocalSystem; standard users may read logs but cannot alter rules, cache, or the uninstall secret.

@@ -12,6 +12,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<FileLogger>();
         services.AddSingleton<ShutdownService>();
         services.AddSingleton<SystemCommandRunner>();
+        services.AddSingleton<OverlayService>();
+        services.AddSingleton<IOverlayLauncher>(serviceProvider => serviceProvider.GetRequiredService<OverlayService>());
         services.AddSingleton<GuardEventService>();
         services.AddSingleton<BlocklistUpdateService>();
         services.AddSingleton<LocalDnsResolverService>();

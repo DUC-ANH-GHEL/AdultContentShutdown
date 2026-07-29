@@ -41,6 +41,8 @@ public sealed class GuardOptions
 
     public NetworkPostureOptions NetworkPosture { get; set; } = new();
 
+    public OverlayOptions Overlay { get; set; } = new();
+
 }
 
 public sealed class DnsOptions
@@ -156,4 +158,11 @@ public sealed class NetworkPostureOptions
     public int CheckIntervalSeconds { get; set; } = 60;
 
     public string ActionOnUnsafePosture { get; set; } = "LogOnly";
+}
+
+public sealed class OverlayOptions
+{
+    public bool Enabled { get; set; }
+
+    public int DurationSeconds { get; set; } = 300;
 }

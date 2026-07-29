@@ -8,12 +8,18 @@ public sealed class GuardEventService
     private readonly GuardOptions _options;
     private readonly FileLogger _fileLogger;
     private readonly ShutdownService _shutdownService;
+    private readonly IOverlayLauncher _overlayLauncher;
 
-    public GuardEventService(IOptions<GuardOptions> options, FileLogger fileLogger, ShutdownService shutdownService)
+    public GuardEventService(
+        IOptions<GuardOptions> options,
+        FileLogger fileLogger,
+        ShutdownService shutdownService,
+        IOverlayLauncher overlayLauncher)
     {
         _options = options.Value;
         _fileLogger = fileLogger;
         _shutdownService = shutdownService;
+        _overlayLauncher = overlayLauncher;
     }
 
     public async Task HandleAsync(GuardEvent guardEvent, CancellationToken cancellationToken)
@@ -21,6 +27,10 @@ public sealed class GuardEventService
         var action = ResolveAction(guardEvent.EventKind);
         guardEvent.ActionTaken = _options.DryRun ? $"DryRun:{action}" : action.ToString();
         await _fileLogger.LogAsync("WARN", Describe(guardEvent), guardEvent, cancellationToken);
+        if (!_options.DryRun && guardEvent.EventKind is GuardEventKind.BlockedDomain or GuardEventKind.PolicyViolation)
+        {
+            await _overlayLauncher.TriggerForViolationAsync(guardEvent, cancellationToken);
+        }
 
         if (_options.DryRun || action != GuardAction.Shutdown)
         {
