@@ -56,4 +56,12 @@ $taskPrincipal = New-ScheduledTaskPrincipal -UserId $UserName -LogonType Interac
 $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 Register-ScheduledTask -TaskName $taskName -Action $taskAction -Principal $taskPrincipal -Settings $taskSettings -Description 'Hien bo dem tam dung khi AdultContentShutdownGuard phat hien vi pham.' -Force | Out-Null
 
+$service = Get-Service -Name 'AdultContentShutdownGuard' -ErrorAction Stop
+if ($service.Status -eq 'Running') {
+  Restart-Service -Name $service.Name -Force
+} else {
+  Start-Service -Name $service.Name
+}
+(Get-Service -Name $service.Name).WaitForStatus('Running', [TimeSpan]::FromSeconds(30))
+
 Write-Host "Da bat bo dem thu $DurationSeconds giay cho $UserName."
