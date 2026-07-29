@@ -101,6 +101,11 @@ public sealed class LocalDnsResolverService
             {
                 break;
             }
+            catch (SocketException exception) when (exception.SocketErrorCode is SocketError.ConnectionReset or SocketError.ConnectionAborted)
+            {
+                // Windows can surface an ICMP response from a client that has already abandoned its UDP query.
+                // The listener remains healthy, so do not turn this expected transport condition into an error alert.
+            }
             catch (Exception exception)
             {
                 await _fileLogger.LogAsync("ERROR", $"DNS UDP listener error: {exception.Message}", cancellationToken: cancellationToken);
