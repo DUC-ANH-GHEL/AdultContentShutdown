@@ -26,8 +26,17 @@ public sealed class HostnameHeuristicClassifier
         ("redtube", "redtube"),
         ("spankbang", "spankbang"),
         ("brazzers", "brazzers"),
-        ("hanime", "hanime")
+        ("hanime", "hanime"),
+        ("sexheo", "sexheo")
     ];
+
+    private static readonly HashSet<string> AdultTopLevelDomains = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "xxx",
+        "porn",
+        "sex",
+        "adult"
+    };
 
     private readonly HostnameHeuristicsOptions _options;
 
@@ -83,7 +92,7 @@ public sealed class HostnameHeuristicClassifier
             }
         }
 
-        if (labels.Any(label => string.Equals(label, "xxx", StringComparison.OrdinalIgnoreCase)))
+        if (labels.Any(AdultTopLevelDomains.Contains))
         {
             score += 100;
             strongestRule ??= "adult-tld";

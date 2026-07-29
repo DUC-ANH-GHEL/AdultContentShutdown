@@ -70,9 +70,12 @@ public sealed class DomainBlocklistTests
     [InlineData("CDN.JAVHDZ.RED.", "heuristic:jav-hd")]
     [InlineData("javsub.blog", "heuristic:jav-sub")]
     [InlineData("cdn.javsub.blog", "heuristic:jav-sub")]
+    [InlineData("s.sexheo.blog", "heuristic:sexheo")]
     [InlineData("freeporn.example", "heuristic:porn")]
     [InlineData("watch-hentai.example", "heuristic:hentai")]
     [InlineData("example.xxx", "heuristic:xxx")]
+    [InlineData("example.sex", "heuristic:adult-tld")]
+    [InlineData("example.adult", "heuristic:adult-tld")]
     [InlineData("sex-video.example", "heuristic:sex-media")]
     public void HostnameHeuristics_blocks_high_confidence_variants(string host, string expectedRule)
     {
