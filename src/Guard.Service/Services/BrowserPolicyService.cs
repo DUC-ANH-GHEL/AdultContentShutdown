@@ -24,6 +24,7 @@ public sealed class BrowserPolicyService
 
         ApplyChromiumPolicy(@"SOFTWARE\Policies\Google\Chrome");
         ApplyChromiumPolicy(@"SOFTWARE\Policies\Microsoft\Edge");
+        ApplyChromiumPolicy(@"SOFTWARE\Policies\Chromium");
         ApplyFirefoxPolicy();
         await _fileLogger.LogAsync("INFO", "Browser policies applied.", cancellationToken: cancellationToken);
     }
@@ -64,7 +65,7 @@ public sealed class BrowserPolicyService
 
         if (_options.BrowserPolicies.DisablePrivateBrowsing)
         {
-            if (path.Contains("Google", StringComparison.OrdinalIgnoreCase))
+            if (!path.Contains("Microsoft", StringComparison.OrdinalIgnoreCase))
             {
                 key.SetValue("IncognitoModeAvailability", 1, RegistryValueKind.DWord);
             }
@@ -110,6 +111,7 @@ public sealed class BrowserPolicyService
 
         return ChromiumPolicyIsApplied(@"SOFTWARE\Policies\Google\Chrome") &&
                ChromiumPolicyIsApplied(@"SOFTWARE\Policies\Microsoft\Edge") &&
+               ChromiumPolicyIsApplied(@"SOFTWARE\Policies\Chromium") &&
                FirefoxPolicyIsApplied();
     }
 
@@ -140,9 +142,9 @@ public sealed class BrowserPolicyService
 
         if (_options.BrowserPolicies.DisablePrivateBrowsing)
         {
-            var valueName = path.Contains("Google", StringComparison.OrdinalIgnoreCase)
-                ? "IncognitoModeAvailability"
-                : "InPrivateModeAvailability";
+            var valueName = path.Contains("Microsoft", StringComparison.OrdinalIgnoreCase)
+                ? "InPrivateModeAvailability"
+                : "IncognitoModeAvailability";
             if (Convert.ToInt32(key.GetValue(valueName, 0)) != 1)
             {
                 return false;

@@ -95,10 +95,14 @@ public sealed class SystemEnforcementService
                      "\"$env:LOCALAPPDATA\\BraveSoftware\\Brave-Browser\\Application\\brave.exe\"," +
                      "\"$env:ProgramFiles\\Opera\\opera.exe\"," +
                      "\"$env:LOCALAPPDATA\\Programs\\Opera\\opera.exe\"," +
-                     "\"$env:LOCALAPPDATA\\Vivaldi\\Application\\vivaldi.exe\");" +
+                     "\"$env:LOCALAPPDATA\\Vivaldi\\Application\\vivaldi.exe\"," +
+                     "\"$env:ProgramFiles\\CocCoc\\Browser\\Application\\browser.exe\"," +
+                     "\"${env:ProgramFiles(x86)}\\CocCoc\\Browser\\Application\\browser.exe\"," +
+                     "\"$env:LOCALAPPDATA\\CocCoc\\Browser\\Application\\browser.exe\");" +
                      "$paths | Where-Object { Test-Path $_ } | Select-Object -Unique | ForEach-Object {" +
                      "New-NetFirewallRule -DisplayName ('" + RulePrefix + " Block UDP DNS ' + [IO.Path]::GetFileNameWithoutExtension($_)) -Direction Outbound -Action Block -Program $_ -Protocol UDP -RemotePort 53 | Out-Null;" +
-                     "New-NetFirewallRule -DisplayName ('" + RulePrefix + " Block TCP DNS ' + [IO.Path]::GetFileNameWithoutExtension($_)) -Direction Outbound -Action Block -Program $_ -Protocol TCP -RemotePort 53 | Out-Null }";
+                     "New-NetFirewallRule -DisplayName ('" + RulePrefix + " Block TCP DNS ' + [IO.Path]::GetFileNameWithoutExtension($_)) -Direction Outbound -Action Block -Program $_ -Protocol TCP -RemotePort 53 | Out-Null;" +
+                     "New-NetFirewallRule -DisplayName ('" + RulePrefix + " Block QUIC ' + [IO.Path]::GetFileNameWithoutExtension($_)) -Direction Outbound -Action Block -Program $_ -Protocol UDP -RemotePort 443 | Out-Null }";
         await _commandRunner.RunPowerShellAsync(script, cancellationToken);
     }
 
