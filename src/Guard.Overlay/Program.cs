@@ -20,7 +20,7 @@ internal static class Program
     private static TimeSpan ReadDuration(IEnumerable<string> args)
     {
         const int defaultDurationSeconds = 300;
-        const int minimumDurationSeconds = 5;
+        const int minimumDurationSeconds = 2;
         const int maximumDurationSeconds = 300;
 
         var arguments = args.ToArray();

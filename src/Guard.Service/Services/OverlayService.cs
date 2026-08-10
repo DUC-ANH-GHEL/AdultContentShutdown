@@ -35,9 +35,9 @@ public sealed class OverlayService : IOverlayLauncher
             return;
         }
 
-        if (_options.Overlay.DurationSeconds is < 5 or > 300)
+        if (_options.Overlay.DurationSeconds is < 2 or > 300)
         {
-            await _fileLogger.LogAsync("ERROR", "Thời lượng bộ đếm phải từ 5 đến 300 giây; không khởi động bộ đếm.", cancellationToken: cancellationToken);
+            await _fileLogger.LogAsync("ERROR", "Thời lượng bộ đếm phải từ 2 đến 300 giây; không khởi động bộ đếm.", cancellationToken: cancellationToken);
             return;
         }
 
