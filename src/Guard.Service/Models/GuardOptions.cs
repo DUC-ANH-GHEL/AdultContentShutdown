@@ -125,6 +125,7 @@ public sealed class ProcessRulesOptions
     [
         "tor",
         "torbrowser",
+        "tor-client-win32",
         "psiphon",
         "ultrasurf"
     ];

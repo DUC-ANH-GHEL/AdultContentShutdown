@@ -81,6 +81,8 @@ public sealed class SystemEnforcementService
     {
         var script = "Get-NetFirewallRule -DisplayName '" + RulePrefix + "*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule;" +
                      "New-NetFirewallRule -DisplayName '" + RulePrefix + " Block DNS over TLS' -Direction Outbound -Action Block -Protocol TCP -RemotePort 853 -RemoteAddress Any | Out-Null;" +
+                     "$cocCocTorClientPattern=Join-Path $env:LOCALAPPDATA 'CocCoc\\Browser\\User Data\\CocCocTorClient\\*\\tor-client-win32.exe';" +
+                     "Get-ChildItem -Path $cocCocTorClientPattern -File -ErrorAction SilentlyContinue | ForEach-Object { New-NetFirewallRule -DisplayName '" + RulePrefix + " Block CocCoc Tor' -Direction Outbound -Action Block -Program $_.FullName | Out-Null };" +
                      "$paths=@(" +
                      "\"$env:ProgramFiles\\Google\\Chrome\\Application\\chrome.exe\"," +
                      "\"${env:ProgramFiles(x86)}\\Google\\Chrome\\Application\\chrome.exe\"," +
@@ -119,7 +121,9 @@ public sealed class SystemEnforcementService
     private async Task<bool> FirewallRulesExistAsync(CancellationToken cancellationToken)
     {
         var script = "$rule=Get-NetFirewallRule -DisplayName '" + RulePrefix + " Block DNS over TLS' -ErrorAction SilentlyContinue;" +
-                     "if ($rule) { exit 0 } else { exit 2 }";
+                     "$torClient=Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'CocCoc\\Browser\\User Data\\CocCocTorClient\\*\\tor-client-win32.exe') -File -ErrorAction SilentlyContinue;" +
+                     "$torRule=Get-NetFirewallRule -DisplayName '" + RulePrefix + " Block CocCoc Tor' -ErrorAction SilentlyContinue;" +
+                     "if ($rule -and (-not $torClient -or $torRule)) { exit 0 } else { exit 2 }";
         return await _commandRunner.RunPowerShellAsync(script, cancellationToken) == 0;
     }
 
