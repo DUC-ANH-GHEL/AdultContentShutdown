@@ -80,6 +80,7 @@ Set-JsonProperty -Object $json.Guard.Tamper -Name 'RestoreSettings' -Value $true
 Set-JsonProperty -Object $json.Guard.NetworkPosture -Name 'ActionOnUnsafePosture' -Value 'LogOnly'
 Set-JsonProperty -Object $json.Guard.ProcessRules -Name 'ActionOnWorkVpnDetected' -Value 'LogOnly'
 Set-JsonProperty -Object $json.Guard.ProcessRules -Name 'TerminateBlockedProcesses' -Value $true
+Set-JsonProperty -Object $json.Guard.ProcessRules -Name 'BlockedProcessNames' -Value @('tor', 'torbrowser', 'tor-client-win32', 'psiphon', 'ultrasurf')
 $json | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $settingsPath -Encoding UTF8
 
 Set-Service -Name $serviceName -StartupType Automatic

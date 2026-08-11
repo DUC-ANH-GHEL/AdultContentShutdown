@@ -118,7 +118,7 @@ public sealed class NetworkPostureMonitorService
     private async Task<bool> FirewallRulesExistAsync(CancellationToken cancellationToken)
     {
         var script = "$rule=Get-NetFirewallRule -DisplayName 'AdultContentShutdownGuard Block DNS over TLS' -ErrorAction SilentlyContinue;" +
-                     "$torClient=Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'CocCoc\\Browser\\User Data\\CocCocTorClient\\*\\tor-client-win32.exe') -File -ErrorAction SilentlyContinue;" +
+                     "$torClient=Get-ChildItem -Path (Join-Path $env:SystemDrive 'Users\\*\\AppData\\Local\\CocCoc\\Browser\\User Data\\CocCocTorClient\\*\\tor-client-win32.exe') -File -ErrorAction SilentlyContinue;" +
                      "$torRule=Get-NetFirewallRule -DisplayName 'AdultContentShutdownGuard Block CocCoc Tor' -ErrorAction SilentlyContinue;" +
                      "if ($rule -and (-not $torClient -or $torRule)) { exit 0 } else { exit 2 }";
         return await _commandRunner.RunPowerShellAsync(script, logNonZeroExit: false, cancellationToken) == 0;
