@@ -90,6 +90,10 @@ public sealed class BrowserPolicyOptions
     public bool DisablePrivateBrowsing { get; set; } = true;
 
     public bool DisableGuestMode { get; set; } = true;
+
+    public bool DisableBraveTor { get; set; } = true;
+
+    public bool DisableBraveVpn { get; set; } = true;
 }
 
 public sealed class TamperOptions
