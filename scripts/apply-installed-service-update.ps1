@@ -79,6 +79,7 @@ Set-JsonProperty -Object $json.Guard.BrowserPolicies -Name 'DisableGuestMode' -V
 Set-JsonProperty -Object $json.Guard.Tamper -Name 'RestoreSettings' -Value $true
 Set-JsonProperty -Object $json.Guard.NetworkPosture -Name 'ActionOnUnsafePosture' -Value 'LogOnly'
 Set-JsonProperty -Object $json.Guard.ProcessRules -Name 'ActionOnWorkVpnDetected' -Value 'LogOnly'
+Set-JsonProperty -Object $json.Guard.ProcessRules -Name 'TerminateBlockedProcesses' -Value $true
 $json | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $settingsPath -Encoding UTF8
 
 Set-Service -Name $serviceName -StartupType Automatic

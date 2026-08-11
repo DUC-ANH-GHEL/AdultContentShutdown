@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [ValidateRange(5, 60)]
+  [ValidateRange(2, 60)]
   [int]$DurationSeconds = 10,
   [string]$UserName = (Get-CimInstance Win32_ComputerSystem).UserName
 )
