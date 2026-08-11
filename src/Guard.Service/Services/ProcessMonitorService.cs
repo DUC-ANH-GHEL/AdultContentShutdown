@@ -8,7 +8,7 @@ public sealed class ProcessMonitorService
 {
     private readonly GuardOptions _options;
     private readonly GuardEventService _guardEventService;
-    private readonly HashSet<string> _reported = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<int> _reported = [];
     private readonly HashSet<string> _reportedWorkVpn = new(StringComparer.OrdinalIgnoreCase);
     private Task? _monitorTask;
     private CancellationTokenSource? _cancellationTokenSource;
@@ -67,21 +67,56 @@ public sealed class ProcessMonitorService
                         continue;
                     }
 
-                    if (!blocked.Contains(process.ProcessName) || !_reported.Add(process.ProcessName))
+                    if (!blocked.Contains(process.ProcessName))
+                    {
+                        continue;
+                    }
+
+                    var terminated = false;
+                    if (_options.ProcessRules.TerminateBlockedProcesses)
+                    {
+                        terminated = TryTerminate(process);
+                    }
+
+                    if (!_reported.Add(process.Id))
                     {
                         continue;
                     }
 
                     await _guardEventService.HandleAsync(new GuardEvent
                     {
-                        EventKind = GuardEventKind.DnsBypassAttempt,
-                        Reason = $"Blocked bypass process is running: {process.ProcessName}",
+                        EventKind = GuardEventKind.PolicyViolation,
+                        Reason = terminated
+                            ? $"Blocked bypass process was terminated: {process.ProcessName}"
+                            : $"Blocked bypass process is running: {process.ProcessName}",
                         MatchedRule = process.ProcessName
                     }, cancellationToken);
                 }
             }
 
             await Task.Delay(TimeSpan.FromSeconds(Math.Max(5, _options.ProcessRules.CheckIntervalSeconds)), cancellationToken);
+        }
+    }
+
+    private static bool TryTerminate(Process process)
+    {
+        try
+        {
+            if (process.HasExited)
+            {
+                return true;
+            }
+
+            process.Kill(entireProcessTree: true);
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return true;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return false;
         }
     }
 }

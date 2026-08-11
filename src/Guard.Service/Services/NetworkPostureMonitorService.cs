@@ -96,17 +96,12 @@ public sealed class NetworkPostureMonitorService
 
     private async Task<bool> BrowserPoliciesAreAppliedAsync(CancellationToken cancellationToken)
     {
-        var braveTorRequired = _options.BrowserPolicies.DisableBraveTor ? "$brave.TorDisabled -eq 1" : "$true";
-        var braveVpnRequired = _options.BrowserPolicies.DisableBraveVpn ? "$brave.BraveVPNDisabled -eq 1" : "$true";
         var script = "$chrome=Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Google\\Chrome' -ErrorAction SilentlyContinue;" +
                      "$edge=Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge' -ErrorAction SilentlyContinue;" +
                      "$chromium=Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Chromium' -ErrorAction SilentlyContinue;" +
-                     "$brave=Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave' -ErrorAction SilentlyContinue;" +
                      "$ffDoh=Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Mozilla\\Firefox\\DNSOverHTTPS' -ErrorAction SilentlyContinue;" +
                      "$ff=Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Mozilla\\Firefox' -ErrorAction SilentlyContinue;" +
-                     "$braveTorOk=(" + braveTorRequired + ");" +
-                     "$braveVpnOk=(" + braveVpnRequired + ");" +
-                     "if ($chrome.DnsOverHttpsMode -eq 'off' -and $chrome.QuicAllowed -eq 0 -and $chrome.ProxyMode -eq 'direct' -and $chrome.IncognitoModeAvailability -eq 1 -and $chrome.BrowserGuestModeEnabled -eq 0 -and $edge.DnsOverHttpsMode -eq 'off' -and $edge.QuicAllowed -eq 0 -and $edge.ProxyMode -eq 'direct' -and $edge.InPrivateModeAvailability -eq 1 -and $edge.BrowserGuestModeEnabled -eq 0 -and $chromium.DnsOverHttpsMode -eq 'off' -and $chromium.QuicAllowed -eq 0 -and $chromium.ProxyMode -eq 'direct' -and $chromium.IncognitoModeAvailability -eq 1 -and $chromium.BrowserGuestModeEnabled -eq 0 -and $braveTorOk -and $braveVpnOk -and $ffDoh.Enabled -eq 0 -and $ffDoh.Locked -eq 1 -and $ff.DisablePrivateBrowsing -eq 1) { exit 0 } else { exit 2 }";
+                     "if ($chrome.DnsOverHttpsMode -eq 'off' -and $chrome.QuicAllowed -eq 0 -and $chrome.ProxyMode -eq 'direct' -and $chrome.IncognitoModeAvailability -eq 1 -and $chrome.BrowserGuestModeEnabled -eq 0 -and $edge.DnsOverHttpsMode -eq 'off' -and $edge.QuicAllowed -eq 0 -and $edge.ProxyMode -eq 'direct' -and $edge.InPrivateModeAvailability -eq 1 -and $edge.BrowserGuestModeEnabled -eq 0 -and $chromium.DnsOverHttpsMode -eq 'off' -and $chromium.QuicAllowed -eq 0 -and $chromium.ProxyMode -eq 'direct' -and $chromium.IncognitoModeAvailability -eq 1 -and $chromium.BrowserGuestModeEnabled -eq 0 -and $ffDoh.Enabled -eq 0 -and $ffDoh.Locked -eq 1 -and $ff.DisablePrivateBrowsing -eq 1) { exit 0 } else { exit 2 }";
         return await _commandRunner.RunPowerShellAsync(script, logNonZeroExit: false, cancellationToken) == 0;
     }
 

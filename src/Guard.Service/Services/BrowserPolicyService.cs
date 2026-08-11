@@ -25,7 +25,6 @@ public sealed class BrowserPolicyService
         ApplyChromiumPolicy(@"SOFTWARE\Policies\Google\Chrome");
         ApplyChromiumPolicy(@"SOFTWARE\Policies\Microsoft\Edge");
         ApplyChromiumPolicy(@"SOFTWARE\Policies\Chromium");
-        ApplyBravePolicy();
         ApplyFirefoxPolicy();
         await _fileLogger.LogAsync("INFO", "Browser policies applied.", cancellationToken: cancellationToken);
     }
@@ -82,25 +81,6 @@ public sealed class BrowserPolicyService
         }
     }
 
-    private void ApplyBravePolicy()
-    {
-        using var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\BraveSoftware\Brave");
-        if (key is null)
-        {
-            return;
-        }
-
-        if (_options.BrowserPolicies.DisableBraveTor)
-        {
-            key.SetValue("TorDisabled", 1, RegistryValueKind.DWord);
-        }
-
-        if (_options.BrowserPolicies.DisableBraveVpn)
-        {
-            key.SetValue("BraveVPNDisabled", 1, RegistryValueKind.DWord);
-        }
-    }
-
     private void ApplyFirefoxPolicy()
     {
         using var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Mozilla\Firefox\DNSOverHTTPS");
@@ -132,7 +112,6 @@ public sealed class BrowserPolicyService
         return ChromiumPolicyIsApplied(@"SOFTWARE\Policies\Google\Chrome") &&
                ChromiumPolicyIsApplied(@"SOFTWARE\Policies\Microsoft\Edge") &&
                ChromiumPolicyIsApplied(@"SOFTWARE\Policies\Chromium") &&
-               BravePolicyIsApplied() &&
                FirefoxPolicyIsApplied();
     }
 
@@ -209,15 +188,4 @@ public sealed class BrowserPolicyService
         return Convert.ToInt32(firefoxRoot?.GetValue("DisablePrivateBrowsing", 0)) == 1;
     }
 
-    private bool BravePolicyIsApplied()
-    {
-        using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\BraveSoftware\Brave");
-        if (key is null)
-        {
-            return false;
-        }
-
-        return (!_options.BrowserPolicies.DisableBraveTor || Convert.ToInt32(key.GetValue("TorDisabled", 0)) == 1)
-               && (!_options.BrowserPolicies.DisableBraveVpn || Convert.ToInt32(key.GetValue("BraveVPNDisabled", 0)) == 1);
-    }
 }

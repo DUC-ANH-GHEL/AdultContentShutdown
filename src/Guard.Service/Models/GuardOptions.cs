@@ -91,9 +91,6 @@ public sealed class BrowserPolicyOptions
 
     public bool DisableGuestMode { get; set; } = true;
 
-    public bool DisableBraveTor { get; set; } = true;
-
-    public bool DisableBraveVpn { get; set; } = true;
 }
 
 public sealed class TamperOptions
@@ -131,6 +128,8 @@ public sealed class ProcessRulesOptions
         "psiphon",
         "ultrasurf"
     ];
+
+    public bool TerminateBlockedProcesses { get; set; } = true;
 }
 
 public sealed class BlocklistUpdateOptions
